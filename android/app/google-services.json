@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "440314889833",
+    "project_id": "jewellerywholesale-2e57c",
+    "storage_bucket": "jewellerywholesale-2e57c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:440314889833:android:29c5786c959cfbb1fe84f8",
+        "android_client_info": {
+          "package_name": "com.example.tanishka"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0e6amoPbOib6diAbqiX3G_HPYVEC4d_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

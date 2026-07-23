@@ -176,12 +176,21 @@ class LatestProductsService {
 
   final snapshot = await query.limit(limit).get();
 
+debugPrint("==================================");
+debugPrint("Collection : $collectionName");
+debugPrint("Category   : ${categoryId ?? "ALL"}");
+debugPrint("Returned   : ${snapshot.docs.length}");
+debugPrint("StartAfter : ${startAfter?.id}");
+debugPrint("==================================");
+
   final List<HomeProductModel> items = [];
 
   for (final doc in snapshot.docs) {
     try {
       final product = ProductModel.fromFirestore(doc);
-
+debugPrint(
+  "Loaded: ${product.productName} (${product.mainCollection})",
+);
       final subDoc =
           await doc.reference.parent.parent!.get();
 
@@ -202,12 +211,13 @@ class LatestProductsService {
     }
   }
 
-  return (
-    products: items,
-    lastDocument:
-        snapshot.docs.isEmpty ? null : snapshot.docs.last,
-    appProductsCompleted:
-        loadAppProducts && snapshot.docs.length < limit,
-  );
+ return (
+  products: items,
+  lastDocument:
+      snapshot.docs.isEmpty ? null : snapshot.docs.last,
+  appProductsCompleted: loadAppProducts
+      ? snapshot.docs.length < limit
+      : false,
+);
 }
 }

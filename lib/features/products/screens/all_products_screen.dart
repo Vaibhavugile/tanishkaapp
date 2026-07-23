@@ -104,22 +104,41 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        _products.addAll(result.products);
+     setState(() {
+  _products.addAll(result.products);
 
-        _lastAppProductDocument = result.lastDocument;
+  _lastAppProductDocument = result.lastDocument;
 
-        _loadingAppProducts =
-            !result.appProductsCompleted;
+  _loadingAppProducts =
+      !result.appProductsCompleted;
 
-        _hasMore = true;
-      });
+  _hasMore =
+      result.products.length == _pageSize ||
+      !result.appProductsCompleted;
+});
 
       // If there are no appProducts, immediately begin loading products.
-      if (result.appProductsCompleted &&
-          result.products.isEmpty) {
-        await _loadMore();
-      }
+    if (result.appProductsCompleted) {
+  _loadingAppProducts = false;
+
+  final productResult = await _service.getProductsPage(
+    categoryId: _selectedCategory,
+    loadAppProducts: false,
+    startAfter: null,
+    limit: _pageSize,
+  );
+
+  if (!mounted) return;
+
+  setState(() {
+    _products.addAll(productResult.products);
+
+    _lastProductDocument = productResult.lastDocument;
+
+    _hasMore =
+        productResult.products.length == _pageSize;
+  });
+}
     } catch (e) {
       debugPrint(e.toString());
     }
@@ -173,15 +192,32 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
         });
 
         // Switch immediately to products if appProducts are finished.
-        if (result.appProductsCompleted &&
-            result.products.isEmpty) {
-          setState(() {
-            _isLoadingMore = false;
-          });
+        if (result.appProductsCompleted) {
+  _loadingAppProducts = false;
 
-          await _loadMore();
-          return;
-        }
+  // If this was the last appProducts page,
+  // immediately load the first products page.
+  if (result.products.length < _pageSize) {
+    final productResult = await _service.getProductsPage(
+      categoryId: _selectedCategory,
+      loadAppProducts: false,
+      startAfter: _lastProductDocument,
+      limit: _pageSize,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _products.addAll(productResult.products);
+
+      _lastProductDocument =
+          productResult.lastDocument;
+
+      _hasMore =
+          productResult.products.length == _pageSize;
+    });
+  }
+}
       }
 
       //------------------------------------------------------

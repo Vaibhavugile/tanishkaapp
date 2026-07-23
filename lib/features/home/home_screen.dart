@@ -1,12 +1,51 @@
 import 'package:flutter/material.dart';
 
 import '../splash/widgets/luxury_background.dart';
-import './widgets/premium_app_bar.dart';
-import './widgets/category_section.dart';
+
 import '../../../models/category_model.dart';
-import './widgets/home_banner.dart';
-class HomeScreen extends StatelessWidget {
+import '../../../models/home_product_model.dart';
+
+import '../../../services/latest_products_service.dart';
+import '../products/screens/all_products_screen.dart';
+
+import 'widgets/category_section.dart';
+import 'widgets/home_banner.dart';
+import 'widgets/latest_products_section.dart';
+import 'widgets/premium_app_bar.dart';
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<HomeProductModel>> _latestProductsFuture;
+
+  /// Currently selected category
+  CategoryModel? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadProducts();
+  }
+
+  void _loadProducts() {
+    _latestProductsFuture = LatestProductsService().getLatestProducts(
+      categoryId: _selectedCategory?.id,
+    );
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _loadProducts();
+    });
+
+    await _latestProductsFuture;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,55 +53,77 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: LuxuryBackground(
         child: SafeArea(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              /// Premium App Bar
-              SliverToBoxAdapter(
-                child: PremiumAppBar(
-                  wishlistCount: 0,
-                  cartCount: 0,
-                  onMenuTap: () {
-                    // TODO: Open Drawer
-                  },
-                  onWishlistTap: () {
-                    // TODO: Wishlist Screen
-                  },
-                  onCartTap: () {
-                    // TODO: Cart Screen
-                  },
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                /// Premium App Bar
+                SliverToBoxAdapter(
+                  child: PremiumAppBar(
+                    wishlistCount: 0,
+                    cartCount: 0,
+                    onMenuTap: () {},
+                    onWishlistTap: () {},
+                    onCartTap: () {},
+                  ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 28),
-              ),
-
-              /// Categories
-              SliverToBoxAdapter(
-                child: CategorySection(
-                  onCategorySelected: (CategoryModel? category) {
-                    debugPrint(
-                      "Selected Category : ${category?.title ?? "All"}",
-                    );
-
-                    // Product filtering will be added later.
-                  },
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 28),
                 ),
-              ),
 
-         const SliverToBoxAdapter(
-  child: SizedBox(height: 30),
-),
+                /// Categories
+                SliverToBoxAdapter(
+                  child: CategorySection(
+                    onCategorySelected: (CategoryModel? category) {
+                      debugPrint(
+                        "Selected Category : ${category?.title ?? "All"}",
+                      );
 
-const SliverToBoxAdapter(
-  child: HomeBanner(),
-),
+                      setState(() {
+                        _selectedCategory = category;
+                        _loadProducts();
+                      });
+                    },
+                  ),
+                ),
 
-const SliverToBoxAdapter(
-  child: SizedBox(height: 35),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 30),
+                ),
+
+                /// Banner
+                const SliverToBoxAdapter(
+                  child: HomeBanner(),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 35),
+                ),
+
+                /// Latest Products
+                SliverToBoxAdapter(
+                  child: LatestProductsSection(
+  future: _latestProductsFuture,
+  onViewAll: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AllProductsScreen(),
+      ),
+    );
+  },
 ),
-            ],
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 30),
+                ),
+              ],
+            ),
           ),
         ),
       ),

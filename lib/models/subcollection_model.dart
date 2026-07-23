@@ -21,6 +21,11 @@ class PriceRange {
           double.tryParse(map["price"]?.toString() ?? "0") ?? 0,
     );
   }
+
+  bool containsQuantity(int quantity) {
+    return quantity >= minQuantity &&
+        quantity <= maxQuantity;
+  }
 }
 
 class TieredPricing {
@@ -45,9 +50,11 @@ class TieredPricing {
       final list = map?[key] as List? ?? [];
 
       return list
-          .map((e) => PriceRange.fromMap(
-                Map<String, dynamic>.from(e),
-              ))
+          .map(
+            (e) => PriceRange.fromMap(
+              Map<String, dynamic>.from(e),
+            ),
+          )
           .toList();
     }
 
@@ -59,6 +66,30 @@ class TieredPricing {
       vip: parse("vip"),
       dropshipping: parse("dropshipping"),
     );
+  }
+
+  /// Returns the price list for the given user role.
+  List<PriceRange> getPriceList(String role) {
+    switch (role.toLowerCase()) {
+      case "dealer":
+        return dealer;
+
+      case "distributor":
+        return distributor;
+
+      case "wholesale":
+        return wholesale;
+
+      case "vip":
+        return vip;
+
+      case "dropshipping":
+        return dropshipping;
+
+      case "retail":
+      default:
+        return retail;
+    }
   }
 }
 
@@ -102,4 +133,30 @@ class SubCollectionModel {
       ),
     );
   }
+
+  /// Returns the correct price based on the user's role
+  /// and selected quantity.
+  double getPrice({
+    required String role,
+    int quantity = 1,
+  }) {
+    final priceList = pricing.getPriceList(role);
+
+    if (priceList.isEmpty) {
+      return 0;
+    }
+
+    for (final range in priceList) {
+      if (range.containsQuantity(quantity)) {
+        return range.price;
+      }
+    }
+
+    // If quantity is outside defined slabs,
+    // return the last available price.
+    return priceList.last.price;
+  }
+
+  /// Returns the purchase rate.
+  double get purchasePrice => purchaseRate;
 }

@@ -44,4 +44,13 @@ class HomeProductModel {
 
   /// Pricing
   TieredPricing get pricing => subCollection.pricing;
+  double getPrice({
+  required String role,
+  int quantity = 1,
+}) {
+  return subCollection.getPrice(
+    role: role,
+    quantity: quantity,
+  );
+}
 }

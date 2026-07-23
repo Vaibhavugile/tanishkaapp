@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/home_product_model.dart';
-
+import '../../../services/user_role_service.dart';
 class PremiumProductCard extends StatefulWidget {
   final HomeProductModel product;
 
@@ -23,7 +23,9 @@ class _PremiumProductCardState
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-
+final price = product.getPrice(
+  role: UserRoleService.instance.role,
+);
     return AnimatedScale(
       duration: const Duration(milliseconds: 180),
       scale: _pressed ? .98 : 1,
@@ -315,15 +317,14 @@ class _PremiumProductCardState
                           const SizedBox(width: 2),
 
                           Text(
-                            product.purchaseRate
-                                .toStringAsFixed(0),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xff241B2F),
-                              letterSpacing: -.8,
-                            ),
-                          ),
+  price.toStringAsFixed(0),
+  style: const TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w900,
+    color: Color(0xff241B2F),
+    letterSpacing: -.8,
+  ),
+),
                         ],
                       ),
 

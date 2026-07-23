@@ -12,7 +12,7 @@ import 'widgets/category_section.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/latest_products_section.dart';
 import 'widgets/premium_app_bar.dart';
-
+import '../../../services/user_role_service.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -26,12 +26,23 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Currently selected category
   CategoryModel? _selectedCategory;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
 
-    _loadProducts();
-  }
+  _loadProducts(); // Initialize the Future immediately
+  _initialize();
+}
+
+Future<void> _initialize() async {
+  await UserRoleService.instance.loadUserRole();
+
+  if (!mounted) return;
+
+  setState(() {
+    _loadProducts(); // Reload products after the user role is available
+  });
+}
 
   void _loadProducts() {
     _latestProductsFuture = LatestProductsService().getLatestProducts(

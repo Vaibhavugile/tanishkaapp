@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../models/home_product_model.dart';
 import '../../../services/user_role_service.dart';
+import '../../../services/cart_service.dart';
+import '../../../models/variation_model.dart';
 class PremiumProductCard extends StatefulWidget {
   final HomeProductModel product;
 
@@ -19,7 +21,64 @@ class _PremiumProductCardState
     extends State<PremiumProductCard> {
   bool _liked = false;
   bool _pressed = false;
+Future<void> _addToCart() async {
+  try {
+    final product = widget.product;
 
+    VariationModel? selectedVariation;
+
+    // Product without variants
+    if (!product.product.hasVariants) {
+      selectedVariation = null;
+    }
+
+    // Product with exactly one variant
+    else if (product.product.variations.length == 1) {
+      selectedVariation =
+          product.product.variations.first;
+    }
+
+    // Multiple variants
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Please select a variant from Product Details.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    await CartService.instance.addToCart(
+      product: product,
+      variation: selectedVariation,
+      quantity: 1,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xff28A745),
+        content: Text(
+          "${product.name} added to cart",
+        ),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.red,
+        content: Text(e.toString()),
+      ),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
@@ -390,9 +449,9 @@ final price = product.getPrice(
                               borderRadius:
                                   BorderRadius.circular(
                                       18),
-                              onTap: () {
-                                // TODO
-                              },
+                              
+                                onTap: _addToCart,
+                              
                               child: Ink(
                                 width: 42,
                                 height: 42,

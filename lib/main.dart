@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import 'providers/cart_provider.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'firebase_options.dart';
 
@@ -33,22 +35,29 @@ class TanishkaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Tanishka',
-
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-
-        scaffoldBackgroundColor: const Color(0xffFFF8F8),
-
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xffB24772),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<CartProvider>(
+          create: (_) => CartProvider(),
         ),
-      ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Tanishka',
 
-      home: const SplashScreen(),
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Poppins',
+
+          scaffoldBackgroundColor: const Color(0xffFFF8F8),
+
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xffB24772),
+          ),
+        ),
+
+        home: const SplashScreen(),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../../models/home_product_model.dart';
 
 import '../../../services/latest_products_service.dart';
 import '../products/screens/all_products_screen.dart';
+import '../cart/screens/cart_screen.dart';
 
 import 'widgets/category_section.dart';
 import 'widgets/home_banner.dart';
@@ -73,14 +74,24 @@ Future<void> _initialize() async {
               slivers: [
                 /// Premium App Bar
                 SliverToBoxAdapter(
-                  child: PremiumAppBar(
-                    wishlistCount: 0,
-                    cartCount: 0,
-                    onMenuTap: () {},
-                    onWishlistTap: () {},
-                    onCartTap: () {},
-                  ),
-                ),
+  child: PremiumAppBar(
+    wishlistCount: 0,
+    onMenuTap: () {
+      // TODO: Open menu/drawer
+    },
+    onWishlistTap: () {
+      // TODO: Navigate to Wishlist
+    },
+    onCartTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CartScreen(),
+        ),
+      );
+    },
+  ),
+),
 
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 28),

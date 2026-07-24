@@ -6,6 +6,7 @@ import '../../../services/latest_products_service.dart';
 import '../../home/widgets/category_section.dart';
 import '../../home/widgets/premium_app_bar.dart';
 import '../../home/widgets/premium_product_card.dart';
+import '../../cart/screens/cart_screen.dart';
 
 class AllProductsScreen extends StatefulWidget {
   const AllProductsScreen({super.key});
@@ -288,13 +289,23 @@ Widget build(BuildContext context) {
           // PREMIUM APP BAR
           //--------------------------------------------------
 
-          PremiumAppBar(
-            wishlistCount: 0,
-            cartCount: 0,
-            onMenuTap: () {},
-            onWishlistTap: () {},
-            onCartTap: () {},
-          ),
+         PremiumAppBar(
+  wishlistCount: 0,
+  onMenuTap: () {
+    // TODO: Open menu
+  },
+  onWishlistTap: () {
+    // TODO: Navigate to Wishlist
+  },
+  onCartTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CartScreen(),
+      ),
+    );
+  },
+),
 
           //--------------------------------------------------
           // CATEGORY SECTION

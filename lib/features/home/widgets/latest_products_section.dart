@@ -236,7 +236,7 @@ class LatestProductsSection extends StatelessWidget {
                   mainAxisSpacing: 22,
 
                   // Premium card height
-                  childAspectRatio: isTablet ? 0.62 : 0.48,
+                  childAspectRatio: isTablet ? 0.50 : 0.35,
                 ),
                 itemBuilder: (context, index) {
                   return PremiumProductCard(

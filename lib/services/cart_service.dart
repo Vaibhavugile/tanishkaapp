@@ -60,8 +60,11 @@ class CartService {
       return null;
     }
 
-    final variantKey =
-        "${variation?.color ?? ""}_${variation?.size ?? ""}";
+    String variantKey = "";
+
+if (variation != null) {
+  variantKey = "${variation.color}_${variation.size}";
+}
 
     for (final doc in snapshot.docs) {
       final item = CartItemModel.fromMap(
@@ -348,6 +351,20 @@ class CartService {
   /// =========================================================
   /// CHECK IF ITEM EXISTS
   /// =========================================================
+  /// =========================================================
+/// GET CART ITEM
+/// =========================================================
+Future<CartItemModel?> getCartItem({
+  required String productId,
+  required String subCollectionId,
+  VariationModel? variation,
+}) async {
+  return await _findExistingItem(
+    productId: productId,
+    subCollectionId: subCollectionId,
+    variation: variation,
+  );
+}
   Future<bool> isInCart({
     required String productId,
     required String subCollectionId,

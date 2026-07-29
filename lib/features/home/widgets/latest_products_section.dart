@@ -229,15 +229,12 @@ class LatestProductsSection extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 clipBehavior: Clip.none,
                 itemCount: products.length,
-                gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isTablet ? 3 : 2,
-                  crossAxisSpacing: 18,
-                  mainAxisSpacing: 22,
-
-                  // Premium card height
-                  childAspectRatio: isTablet ? 0.50 : 0.35,
-                ),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: isTablet ? 3 : 2,
+  crossAxisSpacing: 14,
+  mainAxisSpacing: 14,
+  childAspectRatio: isTablet ? 0.66 : 0.45,
+),
                 itemBuilder: (context, index) {
                   return PremiumProductCard(
                     product: products[index],

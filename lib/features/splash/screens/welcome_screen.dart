@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../home/home_screen.dart';
+import '../../navigation/screens/main_navigation_screen.dart';
 import '../../auth/screens/verification_screen.dart';
 import '../widgets/brand_title.dart';
 import '../widgets/luxury_background.dart';
@@ -57,7 +57,7 @@ Future<void> _continue(BuildContext context) async {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const HomeScreen(),
+            builder: (_) => const MainNavigationScreen(),
           ),
         );
         break;

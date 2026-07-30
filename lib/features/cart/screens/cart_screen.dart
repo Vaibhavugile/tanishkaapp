@@ -5,6 +5,7 @@ import '../../../providers/cart_provider.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/empty_cart.dart';
+import '../../checkout/screens/checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -295,9 +296,13 @@ class CartScreen extends StatelessWidget {
                   totalPrice:
                       cart.totalPrice,
                   onCheckout: () {
-                    // TODO:
-                    // Navigate to Checkout
-                  },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const CheckoutScreen(),
+    ),
+  );
+},
                 )
               : null,
         );

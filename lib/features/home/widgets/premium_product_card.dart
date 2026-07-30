@@ -39,11 +39,12 @@ class _PremiumProductCardState
     _loadCartItem();
   }
   Future<void> _loadCartItem() async {
-  final item = await CartService.instance.getCartItem(
-    productId: product.product.id,
-    subCollectionId: product.subCollection.id,
-    variation: selectedVariation,
-  );
+ final item = await CartService.instance.getCartItem(
+  collectionId: product.collectionId,
+  productId: product.product.id,
+  subCollectionId: product.subCollection.id,
+  variation: selectedVariation,
+);
   debugPrint(
   "Product: ${product.product.productName}"
   "\nHas Variants: $hasVariants"

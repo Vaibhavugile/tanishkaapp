@@ -7,9 +7,14 @@ class CartItemModel {
 
   /// Product
   final String productId;
+
+  /// Parent Collection ID
+  final String collectionId;
+
+  /// Sub Collection ID
   final String subCollectionId;
 
-  /// NEW: Source Collection
+  /// Source Collection
   /// "products" or "appProducts"
   final String source;
 
@@ -38,6 +43,7 @@ class CartItemModel {
   const CartItemModel({
     required this.id,
     required this.productId,
+    required this.collectionId,
     required this.subCollectionId,
     required this.source,
     required this.productName,
@@ -59,6 +65,7 @@ class CartItemModel {
     return CartItemModel(
       id: id,
       productId: map["productId"] ?? "",
+      collectionId: map["collectionId"] ?? "",
       subCollectionId: map["subCollectionId"] ?? "",
       source: map["source"] ?? "products",
       productName: map["productName"] ?? "",
@@ -83,6 +90,7 @@ class CartItemModel {
   Map<String, dynamic> toMap() {
     return {
       "productId": productId,
+      "collectionId": collectionId,
       "subCollectionId": subCollectionId,
       "source": source,
       "productName": productName,
@@ -99,6 +107,7 @@ class CartItemModel {
   }
 
   CartItemModel copyWith({
+    String? collectionId,
     String? source,
     VariationModel? variation,
     int? quantity,
@@ -109,6 +118,7 @@ class CartItemModel {
     return CartItemModel(
       id: id,
       productId: productId,
+      collectionId: collectionId ?? this.collectionId,
       subCollectionId: subCollectionId,
       source: source ?? this.source,
       productName: productName,
@@ -139,7 +149,8 @@ class CartItemModel {
   }
 
   bool isSameVariant(CartItemModel other) {
-    return productId == other.productId &&
+    return collectionId == other.collectionId &&
+        productId == other.productId &&
         subCollectionId == other.subCollectionId &&
         variationKey == other.variationKey;
   }

@@ -52,6 +52,8 @@ class LatestProductsService {
           final product = ProductModel.fromFirestore(doc);
 
           final subCollectionRef = doc.reference.parent.parent!;
+          final collectionId =
+    subCollectionRef.parent.parent!.id;
 
           final subDoc = await subCollectionRef.get();
 
@@ -60,10 +62,11 @@ class LatestProductsService {
 
           allProducts.add(
             HomeProductModel(
-              product: product,
-              subCollection: subCollection,
-              source: productsCollection,
-            ),
+  collectionId: collectionId,
+  product: product,
+  subCollection: subCollection,
+  source: productsCollection,
+),
           );
 
           debugPrint("✔ Product : ${product.productName}");
@@ -99,6 +102,8 @@ class LatestProductsService {
           final product = ProductModel.fromFirestore(doc);
 
           final subCollectionRef = doc.reference.parent.parent!;
+          final collectionId =
+    subCollectionRef.parent.parent!.id;
 
           final subDoc = await subCollectionRef.get();
 
@@ -106,11 +111,12 @@ class LatestProductsService {
               SubCollectionModel.fromFirestore(subDoc);
 
           allProducts.add(
-            HomeProductModel(
-              product: product,
-              subCollection: subCollection,
-              source: appProductsCollection,
-            ),
+          HomeProductModel(
+  collectionId: collectionId,
+  product: product,
+  subCollection: subCollection,
+  source: appProductsCollection,
+),
           );
 
           debugPrint("✔ App Product : ${product.productName}");
@@ -191,18 +197,25 @@ debugPrint("==================================");
 debugPrint(
   "Loaded: ${product.productName} (${product.mainCollection})",
 );
-      final subDoc =
-          await doc.reference.parent.parent!.get();
+      final subCollectionRef =
+    doc.reference.parent.parent!;
+
+final collectionId =
+    subCollectionRef.parent.parent!.id;
+
+final subDoc =
+    await subCollectionRef.get();
 
       final subCollection =
           SubCollectionModel.fromFirestore(subDoc);
 
       items.add(
-        HomeProductModel(
-          product: product,
-          subCollection: subCollection,
-          source: collectionName,
-        ),
+      HomeProductModel(
+  collectionId: collectionId,
+  product: product,
+  subCollection: subCollection,
+  source: collectionName,
+),
       );
     } catch (e) {
       debugPrint(

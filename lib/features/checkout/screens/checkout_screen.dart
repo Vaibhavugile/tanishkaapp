@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/address_section.dart';
 import '../widgets/delivery_section.dart';
 import 'package:provider/provider.dart';
-
+import '../../../services/order_service.dart';
 import '../../../providers/cart_provider.dart';
 import '../widgets/order_summary_section.dart';
 import '../widgets/price_summary_section.dart';
@@ -11,6 +11,9 @@ import '../../address/screens/address_list_screen.dart';
 import '../../../models/address_model.dart';
 import '../widgets/coupon_section.dart';
 import '../widgets/order_notes_section.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../orders/screens/order_success_screen.dart';
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({
     super.key,
@@ -26,6 +29,7 @@ class _CheckoutScreenState
   DeliveryType _delivery =
       DeliveryType.standard;
       AddressModel? _selectedAddress;
+      bool _placingOrder = false;
       final TextEditingController
     _orderNotesController =
         TextEditingController();
@@ -47,93 +51,173 @@ class _CheckoutScreenState
     _selectedAddress = address;
   });
 }
-// Map<String, dynamic> _buildOrderData() {
-//   return {
-//     /// Customer
-//     "customerId": FirebaseAuth.instance.currentUser!.uid,
+Map<String, dynamic> _buildOrderData() {
+  final cart = Provider.of<CartProvider>(
+    context,
+    listen: false,
+  );
 
-//     "orderSource": "Flutter App",
+  return {
+    /// =====================================================
+    /// Customer
+    /// =====================================================
+    "customerId": FirebaseAuth.instance.currentUser!.uid,
 
-//     "createdFrom": "Mobile App",
+    "orderSource": "Flutter App",
 
-//     /// Order Status
-//     "status": "Placed",
+    "createdFrom": "Mobile App",
 
-//     "paymentMethod": "Pending",
+    /// =====================================================
+    /// Order Status
+    /// =====================================================
+    "status": "Placed",
 
-//     "paymentStatus": "Pending",
+    "paymentMethod": "Pending",
 
-//     "deliveryMethod": _selectedDelivery.name,
+    "paymentStatus": "Pending",
 
-//     "notes": _orderNotesController.text.trim(),
+    "deliveryMethod": _delivery.name,
 
-//     /// Billing Info
-//     "billingInfo": {
-//       "fullName": _selectedAddress!.fullName,
-//       "phoneNumber": _selectedAddress!.phoneNumber,
-//       "email":
-//           FirebaseAuth.instance.currentUser?.email ?? "",
-//       "addressLine1": _selectedAddress!.addressLine1,
-//       "addressLine2": _selectedAddress!.addressLine2,
-//       "city": _selectedAddress!.city,
-//       "state": _selectedAddress!.state,
-//       "country": _selectedAddress!.country,
-//       "pincode": _selectedAddress!.pincode,
-//     },
+    "notes": _orderNotesController.text.trim(),
 
-//     /// Shipping Info
-//     "shippingInfo": {
-//       "fullName": _selectedAddress!.fullName,
-//       "phoneNumber": _selectedAddress!.phoneNumber,
-//       "email":
-//           FirebaseAuth.instance.currentUser?.email ?? "",
-//       "addressLine1": _selectedAddress!.addressLine1,
-//       "addressLine2": _selectedAddress!.addressLine2,
-//       "city": _selectedAddress!.city,
-//       "state": _selectedAddress!.state,
-//       "country": _selectedAddress!.country,
-//       "pincode": _selectedAddress!.pincode,
-//     },
+    /// =====================================================
+    /// Billing Info
+    /// =====================================================
+    "billingInfo": {
+      "fullName": _selectedAddress!.fullName,
+      "phoneNumber": _selectedAddress!.phone,
+      "email":
+          FirebaseAuth.instance.currentUser?.email ?? "",
+      "addressLine1": _selectedAddress!.addressLine1,
+      "addressLine2": _selectedAddress!.addressLine2,
+      "city": _selectedAddress!.city,
+      "state": _selectedAddress!.state,
+      "country": _selectedAddress!.country,
+      "pincode": _selectedAddress!.pincode,
+    },
 
-//     /// Products
-//     "items": cart.items.map((item) {
-//       return {
-//         "collectionId": item.collectionId,
-//         "subcollectionId": item.subCollectionId,
-//         "productId": item.productId,
-//         "productName": item.productName,
-//         "productCode": item.productCode,
-//         "image": item.image,
-//         "quantity": item.quantity,
-//         "priceAtTimeOfOrder": item.unitPrice,
-//         "totalPrice": item.totalPrice,
-//         "source": item.source,
-//         "variation": item.variation?.toMap(),
-//       };
-//     }).toList(),
+    /// =====================================================
+    /// Shipping Info
+    /// =====================================================
+    "shippingInfo": {
+      "fullName": _selectedAddress!.fullName,
+      "phoneNumber": _selectedAddress!.phone,
+      "email":
+          FirebaseAuth.instance.currentUser?.email ?? "",
+      "addressLine1": _selectedAddress!.addressLine1,
+      "addressLine2": _selectedAddress!.addressLine2,
+      "city": _selectedAddress!.city,
+      "state": _selectedAddress!.state,
+      "country": _selectedAddress!.country,
+      "pincode": _selectedAddress!.pincode,
+    },
 
-//     /// Pricing
-//     "subtotal": cart.totalPrice,
+    /// =====================================================
+    /// Products
+    /// =====================================================
+    "items": cart.items.map((item) {
+      return {
+        "collectionId": item.collectionId,
+        "subcollectionId": item.subCollectionId,
+        "productId": item.productId,
+        "productName": item.productName,
+        "productCode": item.productCode,
+        "image": item.image,
+        "quantity": item.quantity,
+        "priceAtTimeOfOrder": item.unitPrice,
+        "totalPrice": item.totalPrice,
+        "source": item.source,
+        "variation": item.variation?.toMap(),
+      };
+    }).toList(),
 
-//     "shippingFee":
-//         _selectedDelivery == DeliveryType.express
-//             ? 150.0
-//             : 0.0,
+    /// =====================================================
+    /// Pricing
+    /// =====================================================
+    /// =====================================================
+/// Pricing
+/// =====================================================
+"subtotal": cart.totalPrice,
 
-//     "discount": 0.0,
+"shippingFee":
+    _delivery == DeliveryType.express
+        ? 150.0
+        : 0.0,
 
-//     "totalAmount":
-//         cart.totalPrice +
-//         (_selectedDelivery ==
-//                 DeliveryType.express
-//             ? 150.0
-//             : 0.0),
-//   };
-// }
+"gst": 0.0,
+
+"discount": 0.0,
+
+"totalAmount":
+    cart.totalPrice +
+    (_delivery == DeliveryType.express
+        ? 150.0
+        : 0.0),
+  };
+}
 @override
 void dispose() {
   _orderNotesController.dispose();
   super.dispose();
+}
+Future<void> _placeOrder() async {
+  if (_selectedAddress == null) {
+    return;
+  }
+
+  final cart =
+      Provider.of<CartProvider>(
+        context,
+        listen: false,
+      );
+
+  try {
+    setState(() {
+      _placingOrder = true;
+    });
+
+    final response =
+        await OrderService.instance.placeOrder(
+      orderData: _buildOrderData(),
+    );
+
+    debugPrint("Order Response: $response");
+
+    await cart.clearCart();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Order placed successfully."),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+  Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => OrderSuccessScreen(
+      orderId: response["orderId"]?.toString() ?? "",
+    ),
+  ),
+);
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _placingOrder = false;
+      });
+    }
+  }
 }
   @override
   Widget build(BuildContext context) {
@@ -148,7 +232,7 @@ final subtotal = cart.totalPrice;
 
 const discount = 0.0;
 
-final gst = subtotal * 0.03;
+const double gst = 0.0;
     return Scaffold(
       backgroundColor: const Color(0xffF8F9FB),
 
@@ -281,8 +365,7 @@ final gst = subtotal * 0.03;
   name:
       _selectedAddress?.fullName ?? "",
 
-  phone:
-      _selectedAddress?.phone ?? "",
+  phone: _selectedAddress?.phone ?? "",
 
   address:
       _selectedAddress?.fullAddress ?? "",
@@ -422,36 +505,45 @@ PriceSummarySection(
                     ),
                   ),
                   onPressed:
-                      cart.isEmpty ||
-                              _selectedAddress ==
-                                  null
-                          ? null
-                          : () {
-
-                            // Payment
-
-                          },
-                  child: const Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.center,
-                    children: [
-
-                      Text(
-                        "Continue",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(width: 8),
-
-                      Icon(
-                        Icons.arrow_forward,
-                      ),
-                    ],
-                  ),
+    cart.isEmpty ||
+            _selectedAddress == null ||
+            _placingOrder
+        ? null
+        : _placeOrder,
+                  child: Row(
+  mainAxisAlignment:
+      MainAxisAlignment.center,
+  children: [
+    if (_placingOrder) ...[
+      const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(width: 12),
+      const Text(
+        "Placing...",
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ] else ...[
+      const Text(
+        "Place Order",
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(width: 8),
+      const Icon(Icons.arrow_forward),
+    ],
+  ],
+),
                 ),
               ),
             ),

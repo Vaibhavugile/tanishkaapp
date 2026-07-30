@@ -44,17 +44,25 @@ class CartService {
   /// Variant
   /// ---------------------------------------------------------
   Future<CartItemModel?> _findExistingItem({
-    required String productId,
-    required String subCollectionId,
-    VariationModel? variation,
-  }) async {
-    final snapshot = await _cartCollection
-        .where("productId", isEqualTo: productId)
-        .where(
-          "subCollectionId",
-          isEqualTo: subCollectionId,
-        )
-        .get();
+  required String collectionId,
+  required String productId,
+  required String subCollectionId,
+  VariationModel? variation,
+}) async {
+  final snapshot = await _cartCollection
+      .where(
+        "collectionId",
+        isEqualTo: collectionId,
+      )
+      .where(
+        "productId",
+        isEqualTo: productId,
+      )
+      .where(
+        "subCollectionId",
+        isEqualTo: subCollectionId,
+      )
+      .get();
 
     if (snapshot.docs.isEmpty) {
       return null;
@@ -135,10 +143,11 @@ if (variation != null) {
     );
 
     final existingItem = await _findExistingItem(
-      productId: product.product.id,
-      subCollectionId: product.subCollection.id,
-      variation: variation,
-    );
+  collectionId: product.collectionId,
+  productId: product.product.id,
+  subCollectionId: product.subCollection.id,
+  variation: variation,
+);
 
     /// =========================================================
     /// ITEM ALREADY EXISTS
@@ -189,9 +198,16 @@ if (variation != null) {
     final doc = _cartCollection.doc();
 
     final item = CartItemModel(
-      id: doc.id,
-      productId: product.product.id,
-      subCollectionId: product.subCollection.id,
+     id: doc.id,
+
+  /// Product
+  productId: product.product.id,
+
+  /// Parent Collection
+  collectionId: product.collectionId,
+
+  /// Sub Collection
+  subCollectionId: product.subCollection.id,
       source: product.source,
       productName: product.product.productName,
       productCode: product.product.productCode,
@@ -355,27 +371,32 @@ if (variation != null) {
 /// GET CART ITEM
 /// =========================================================
 Future<CartItemModel?> getCartItem({
+  required String collectionId,
   required String productId,
   required String subCollectionId,
   VariationModel? variation,
 }) async {
   return await _findExistingItem(
+    collectionId: collectionId,
     productId: productId,
     subCollectionId: subCollectionId,
     variation: variation,
   );
+
 }
   Future<bool> isInCart({
-    required String productId,
-    required String subCollectionId,
-    VariationModel? variation,
-  }) async {
-    final item = await _findExistingItem(
-      productId: productId,
-      subCollectionId: subCollectionId,
-      variation: variation,
-    );
+  required String collectionId,
+  required String productId,
+  required String subCollectionId,
+  VariationModel? variation,
+}) async {
+  final item = await _findExistingItem(
+    collectionId: collectionId,
+    productId: productId,
+    subCollectionId: subCollectionId,
+    variation: variation,
+  );
 
-    return item != null;
-  }
+  return item != null;
+}
 }

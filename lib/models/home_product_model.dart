@@ -2,8 +2,13 @@ import 'product_model.dart';
 import 'subcollection_model.dart';
 
 class HomeProductModel {
+  /// Parent Collection ID
+  final String collectionId;
+
+  /// Product
   final ProductModel product;
 
+  /// Sub Collection
   final SubCollectionModel subCollection;
 
   /// Which collection the product came from
@@ -11,11 +16,13 @@ class HomeProductModel {
   final String source;
 
   const HomeProductModel({
+    required this.collectionId,
     required this.product,
     required this.subCollection,
     required this.source,
   });
 
+  /// Source Helpers
   bool get isAppProduct => source == "appProducts";
 
   bool get isNormalProduct => source == "products";
@@ -44,13 +51,14 @@ class HomeProductModel {
 
   /// Pricing
   TieredPricing get pricing => subCollection.pricing;
+
   double getPrice({
-  required String role,
-  int quantity = 1,
-}) {
-  return subCollection.getPrice(
-    role: role,
-    quantity: quantity,
-  );
-}
+    required String role,
+    int quantity = 1,
+  }) {
+    return subCollection.getPrice(
+      role: role,
+      quantity: quantity,
+    );
+  }
 }

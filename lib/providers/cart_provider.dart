@@ -102,35 +102,39 @@ class CartProvider extends ChangeNotifier {
     );
   }
 
-  CartItemModel? findItem(
-    String productId,
-    String subCollectionId,
-    String variationKey,
-  ) {
-    try {
-      return _items.firstWhere(
-        (item) =>
-            item.productId == productId &&
-            item.subCollectionId == subCollectionId &&
-            item.variationKey == variationKey,
-      );
-    } catch (_) {
-      return null;
-    }
+CartItemModel? findItem(
+  String collectionId,
+  String productId,
+  String subCollectionId,
+  String variationKey,
+) {
+  try {
+    return _items.firstWhere(
+      (item) =>
+          item.collectionId == collectionId &&
+          item.productId == productId &&
+          item.subCollectionId == subCollectionId &&
+          item.variationKey == variationKey,
+    );
+  } catch (_) {
+    return null;
   }
+}
 
   bool isInCart({
-    required String productId,
-    required String subCollectionId,
-    required String variationKey,
-  }) {
-    return findItem(
-          productId,
-          subCollectionId,
-          variationKey,
-        ) !=
-        null;
-  }
+  required String collectionId,
+  required String productId,
+  required String subCollectionId,
+  required String variationKey,
+}) {
+  return findItem(
+        collectionId,
+        productId,
+        subCollectionId,
+        variationKey,
+      ) !=
+      null;
+}
 
   @override
   void dispose() {

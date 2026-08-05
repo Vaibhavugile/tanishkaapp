@@ -9,12 +9,16 @@ import '../widgets/luxury_background.dart';
 import '../widgets/luxury_button.dart';
 import '../widgets/sparkle_background.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../../services/login_router_service.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 Future<void> _continue(BuildContext context) async {
   final user = FirebaseAuth.instance.currentUser;
 
-  // User is not logged in
+  //----------------------------------------------------------
+  // Not Logged In
+  //----------------------------------------------------------
+
   if (user == null) {
     Navigator.push(
       context,
@@ -25,61 +29,34 @@ Future<void> _continue(BuildContext context) async {
     return;
   }
 
+  //----------------------------------------------------------
+  // Already Logged In
+  //----------------------------------------------------------
+
   try {
-    final doc = await FirebaseFirestore.instance
-        .collection("appUsers")
-        .doc(user.uid)
-        .get();
-
-    if (!doc.exists) {
-      await FirebaseAuth.instance.signOut();
-
-      if (!context.mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
-      );
-      return;
-    }
-
-    final data = doc.data()!;
-
-    final status =
-        (data["verificationStatus"] ?? "pending").toString();
-
-    if (!context.mounted) return;
-
-    switch (status) {
-      case "approved":
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const MainNavigationScreen(),
-          ),
-        );
-        break;
-
-      case "pending":
-      case "rejected":
-      case "suspended":
-      default:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const VerificationScreen(),
-          ),
-        );
-        break;
-    }
+    await LoginRouterService.instance.routeUser(
+      context: context,
+      firebaseUser: user,
+    );
   } catch (e) {
+    await FirebaseAuth.instance.signOut();
+
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Something went wrong.\n$e"),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.red,
+        content: Text(
+          "Something went wrong.\n$e",
+        ),
+      ),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
       ),
     );
   }

@@ -10,7 +10,7 @@ import '../widgets/auth_textfield.dart';
 import '../widgets/password_field.dart';
 import 'signup_screen.dart';
 import 'verification_screen.dart';
-
+import '../../../services/login_router_service.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -31,158 +31,115 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> login() async {
-    FocusScope.of(context).unfocus();
+ Future<void> login() async {
+  FocusScope.of(context).unfocus();
 
-    final phone = phoneController.text.trim();
-    final password = passwordController.text.trim();
+  final phone = phoneController.text.trim();
+  final password = passwordController.text.trim();
 
-    if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter your mobile number."),
+  if (phone.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Please enter your mobile number.",
         ),
-      );
-      return;
+      ),
+    );
+    return;
+  }
+
+  if (phone.length != 10) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Please enter a valid 10-digit mobile number.",
+        ),
+      ),
+    );
+    return;
+  }
+
+  if (password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Please enter your password.",
+        ),
+      ),
+    );
+    return;
+  }
+
+  try {
+    setState(() {
+      isLoading = true;
+    });
+
+    final email = "91$phone@yani.app";
+
+    final credential =
+        await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) return;
+
+    await LoginRouterService.instance.routeUser(
+      context: context,
+      firebaseUser: credential.user!,
+    );
+  } on FirebaseAuthException catch (e) {
+    if (!mounted) return;
+
+    String message = "Unable to login.";
+
+    switch (e.code) {
+      case "invalid-credential":
+      case "user-not-found":
+        message =
+            "Invalid mobile number or password.";
+        break;
+
+      case "wrong-password":
+        message = "Incorrect password.";
+        break;
+
+      case "too-many-requests":
+        message =
+            "Too many login attempts. Please try again later.";
+        break;
+
+      case "network-request-failed":
+        message =
+            "No internet connection. Please try again.";
+        break;
     }
 
-    if (phone.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter a valid 10-digit mobile number."),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "Something went wrong.\n$e",
         ),
-      );
-      return;
-    }
-
-    if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter your password."),
-        ),
-      );
-      return;
-    }
-
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      final email = "91$phone@yani.app";
-
-      final credential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      final uid = credential.user!.uid;
-
-      final document = await FirebaseFirestore.instance
-          .collection("appUsers")
-          .doc(uid)
-          .get();
-
-      if (!document.exists) {
-        await FirebaseAuth.instance.signOut();
-
-        if (!mounted) return;
-
-        setState(() {
-          isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Account not found."),
-          ),
-        );
-
-        return;
-      }
-
-      final data = document.data()!;
-      final verificationStatus =
-          (data["verificationStatus"] ?? "pending").toString();
-
-      if (!mounted) return;
-
+      ),
+    );
+  } finally {
+    if (mounted) {
       setState(() {
         isLoading = false;
       });
-
-      switch (verificationStatus) {
-        case "approved":
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const HomeScreen(),
-            ),
-            (route) => false,
-          );
-          break;
-
-        case "pending":
-        case "rejected":
-        case "suspended":
-        default:
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const VerificationScreen(),
-            ),
-            (route) => false,
-          );
-          break;
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        isLoading = false;
-      });
-
-      String message = "Unable to login.";
-
-      switch (e.code) {
-        case "invalid-credential":
-        case "user-not-found":
-          message = "Invalid mobile number or password.";
-          break;
-
-        case "wrong-password":
-          message = "Incorrect password.";
-          break;
-
-        case "too-many-requests":
-          message =
-              "Too many login attempts. Please try again later.";
-          break;
-
-        case "network-request-failed":
-          message =
-              "No internet connection. Please try again.";
-          break;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Something went wrong.\n$e"),
-        ),
-      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

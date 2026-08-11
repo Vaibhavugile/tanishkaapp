@@ -12,7 +12,9 @@ class AdminOrderService {
   static const int pageSize = 25;
 
   ///////////////////////////////////////////////////////////
-  /// Base Query
+  /// BASE QUERY
+  ///
+  /// Only Flutter App orders.
   ///////////////////////////////////////////////////////////
 
   Query<Map<String, dynamic>> get _baseQuery {
@@ -25,7 +27,10 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Latest Order Chats (Realtime)
+  /// LATEST ORDER CHATS
+  ///
+  /// Realtime
+  /// Latest 25 only
   ///////////////////////////////////////////////////////////
 
   Stream<QuerySnapshot<Map<String, dynamic>>>
@@ -40,25 +45,30 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Load More
+  /// LOAD MORE ORDER CHATS
+  ///
+  /// Used for pagination after first 25.
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
       loadMore({
-    required DocumentSnapshot lastDocument,
+    required DocumentSnapshot<
+        Map<String, dynamic>> lastDocument,
   }) {
     return _baseQuery
         .orderBy(
           "updatedAt",
           descending: true,
         )
-        .startAfterDocument(lastDocument)
+        .startAfterDocument(
+          lastDocument,
+        )
         .limit(pageSize)
         .get();
   }
 
   ///////////////////////////////////////////////////////////
-  /// Refresh First Page
+  /// REFRESH FIRST PAGE
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -73,7 +83,7 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Single Order Chat
+  /// SINGLE ORDER CHAT - REALTIME
   ///////////////////////////////////////////////////////////
 
   Stream<DocumentSnapshot<Map<String, dynamic>>>
@@ -87,7 +97,7 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Get Order Chat Once
+  /// SINGLE ORDER CHAT - ONCE
   ///////////////////////////////////////////////////////////
 
   Future<DocumentSnapshot<Map<String, dynamic>>>
@@ -101,7 +111,7 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Chat Messages
+  /// CHAT MESSAGES - REALTIME
   ///////////////////////////////////////////////////////////
 
   Stream<QuerySnapshot<Map<String, dynamic>>>
@@ -120,7 +130,7 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Search By Order ID
+  /// SEARCH BY EXACT ORDER ID
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -130,14 +140,19 @@ class AdminOrderService {
     return _baseQuery
         .where(
           "orderId",
-          isEqualTo: orderId,
+          isEqualTo: orderId.trim(),
         )
         .limit(1)
         .get();
   }
 
   ///////////////////////////////////////////////////////////
-  /// Search By Customer Name
+  /// SEARCH BY EXACT CUSTOMER NAME
+  ///
+  /// NOTE:
+  /// This is exact matching.
+  /// Firestore does not provide normal
+  /// "contains" search here.
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -147,14 +162,14 @@ class AdminOrderService {
     return _baseQuery
         .where(
           "customerName",
-          isEqualTo: customerName,
+          isEqualTo: customerName.trim(),
         )
         .limit(pageSize)
         .get();
   }
 
   ///////////////////////////////////////////////////////////
-  /// Search By Phone
+  /// SEARCH BY EXACT PHONE
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -164,14 +179,14 @@ class AdminOrderService {
     return _baseQuery
         .where(
           "customerPhone",
-          isEqualTo: phone,
+          isEqualTo: phone.trim(),
         )
         .limit(pageSize)
         .get();
   }
 
   ///////////////////////////////////////////////////////////
-  /// Filter By Order Status
+  /// FILTER BY ORDER STATUS
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -192,7 +207,7 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Filter By Payment Status
+  /// FILTER BY PAYMENT STATUS
   ///////////////////////////////////////////////////////////
 
   Future<QuerySnapshot<Map<String, dynamic>>>
@@ -213,7 +228,13 @@ class AdminOrderService {
   }
 
   ///////////////////////////////////////////////////////////
-  /// Mark Chat Read By Admin
+  /// MARK CHAT AS READ BY ADMIN
+  ///
+  /// IMPORTANT:
+  /// Do NOT update updatedAt here.
+  ///
+  /// Reading a chat should not make an old order
+  /// jump to the top of the order list.
   ///////////////////////////////////////////////////////////
 
   Future<void> markAdminRead(
@@ -224,7 +245,6 @@ class AdminOrderService {
         .doc(orderId)
         .update({
       "unreadAdmin": 0,
-      "updatedAt": FieldValue.serverTimestamp(),
     });
   }
 }

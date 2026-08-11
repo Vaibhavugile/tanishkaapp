@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/dashboard_stats_model.dart';
+import '../../../services/dashboard_stats_service.dart';
+
 import 'dashboard_card.dart';
 
 class DashboardSummary extends StatelessWidget {
@@ -9,61 +12,68 @@ class DashboardSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
+    return StreamBuilder<DashboardStatsModel>(
+      stream: DashboardStatsService.instance.statsStream(),
+      builder: (context, snapshot) {
+        final stats =
+            snapshot.data ??
+            const DashboardStatsModel();
 
-        Row(
-          children: const [
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _SummaryCard(
+                    title: "Today's Orders",
+                    value: "${stats.todayOrders}",
+                    icon: Icons.shopping_bag_outlined,
+                    color: const Color(0xffE91E63),
+                  ),
+                ),
 
-            Expanded(
-              child: _SummaryCard(
-                title: "Today's Orders",
-                value: "18",
-                icon: Icons.shopping_bag_outlined,
-                color: Color(0xffE91E63),
-              ),
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: _SummaryCard(
+                    title: "Pending Orders",
+                    value: "${stats.pendingOrders}",
+                    icon: Icons.pending_actions,
+                    color: const Color(0xffFF9800),
+                  ),
+                ),
+              ],
             ),
 
-            SizedBox(width: 14),
+            const SizedBox(height: 14),
 
-            Expanded(
-              child: _SummaryCard(
-                title: "Pending",
-                value: "7",
-                icon: Icons.pending_actions,
-                color: Color(0xffFF9800),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: _SummaryCard(
+                    title: "Packing",
+                    value: "${stats.packingOrders}",
+                    icon: Icons.inventory_2_outlined,
+                    color: const Color(0xff4CAF50),
+                  ),
+                ),
+
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: _SummaryCard(
+                    title: "Today's Revenue",
+                    value:
+                        "₹${stats.todayRevenue.toStringAsFixed(0)}",
+                    icon: Icons.currency_rupee,
+                    color: const Color(0xff673AB7),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-
-        const SizedBox(height: 14),
-
-        Row(
-          children: const [
-
-            Expanded(
-              child: _SummaryCard(
-                title: "Packing",
-                value: "11",
-                icon: Icons.inventory_2_outlined,
-                color: Color(0xff4CAF50),
-              ),
-            ),
-
-            SizedBox(width: 14),
-
-            Expanded(
-              child: _SummaryCard(
-                title: "Revenue",
-                value: "₹84K",
-                icon: Icons.currency_rupee,
-                color: Color(0xff673AB7),
-              ),
-            ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -91,7 +101,6 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-
           Container(
             width: 52,
             height: 52,
@@ -111,6 +120,8 @@ class _SummaryCard extends StatelessWidget {
 
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w900,

@@ -10,7 +10,7 @@ import '../widgets/dashboard_summary.dart';
 import '../widgets/quick_actions_grid.dart';
 import '../widgets/recent_orders_widget.dart';
 import '../widgets/recent_activity_widget.dart';
-
+import '../payments/screens/admin_payment_methods_screen.dart';
 import '../orders/screens/order_list_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -75,6 +75,19 @@ class _AdminDashboardScreenState
       ),
     );
   }
+  ///////////////////////////////////////////////////////////
+/// OPEN PAYMENT METHODS
+///////////////////////////////////////////////////////////
+
+void _openPaymentMethods() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const AdminPaymentMethodsScreen(),
+    ),
+  );
+}
 
   ///////////////////////////////////////////////////////////
   /// LOGOUT
@@ -202,9 +215,9 @@ class _AdminDashboardScreenState
                       horizontal: 18,
                     ),
                     child: QuickActionsGrid(
-                      onOrdersTap:
-                          _openOrders,
-                    ),
+  onOrdersTap: _openOrders,
+  onPaymentsTap: _openPaymentMethods,
+),
                   ),
                 ),
 

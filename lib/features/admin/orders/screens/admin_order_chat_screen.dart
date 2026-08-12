@@ -7,6 +7,17 @@ import '../services/admin_order_service.dart';
 
 import '../widgets/order_summary_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'admin_payment_screen.dart';
+enum AdminMessageType {
+  text,
+  payment,
+  packing,
+  shipment,
+  tracking,
+  invoice,
+  status,
+}
 class AdminOrderChatScreen extends StatefulWidget {
   final String orderId;
 
@@ -26,7 +37,8 @@ class _AdminOrderChatScreenState
   ///////////////////////////////////////////////////////////
   /// COLORS
   ///////////////////////////////////////////////////////////
-
+AdminMessageType _selectedMessageType =
+    AdminMessageType.text;
   static const Color primary =
       Color(0xffE91E63);
 
@@ -888,54 +900,1628 @@ String _monthName(int month) {
 
   return months[month - 1];
 }
-  Widget _buildMessage(
-    ChatMessageModel message,
-  ) {
-    /////////////////////////////////////////////////////////
-    /// ORDER MESSAGE
-    /////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// MESSAGE
+///////////////////////////////////////////////////////////
 
-    // if (message.isOrder) {
-    //   return _buildOrderMessage(
-    //     message,
-    //   );
-    // }
+Widget _buildMessage(
+  ChatMessageModel message,
+) {
+  /////////////////////////////////////////////////////////
+  /// SYSTEM
+  /////////////////////////////////////////////////////////
 
-    /////////////////////////////////////////////////////////
-    /// SYSTEM MESSAGE
-    /////////////////////////////////////////////////////////
-
-    if (message.isSystem) {
-      return _buildSystemMessage(
-        message,
-      );
-    }
-
-    /////////////////////////////////////////////////////////
-    /// NORMAL MESSAGE
-    /////////////////////////////////////////////////////////
-
-    final isAdmin =
-        message.isAdmin;
-
-    final isCustomer =
-        message.isCustomer;
-
-    /////////////////////////////////////////////////////////
-    /// UNKNOWN SENDER
-    /////////////////////////////////////////////////////////
-
-    if (!isAdmin && !isCustomer) {
-      return _buildSystemMessage(
-        message,
-      );
-    }
-
-    return _buildChatBubble(
-      message,
-      isAdmin: isAdmin,
-    );
+  if (message.isSystem) {
+    return _buildSystemMessage(message);
   }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT
+  /////////////////////////////////////////////////////////
+
+  if (message.isPayment) {
+    return _buildPaymentMessage(message);
+  }
+
+  /////////////////////////////////////////////////////////
+  /// ORDER
+  /////////////////////////////////////////////////////////
+
+  if (message.isOrder) {
+    return _buildOrderMessage(message);
+  }
+
+  /////////////////////////////////////////////////////////
+  /// NORMAL MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final isAdmin = message.isAdmin;
+  final isCustomer = message.isCustomer;
+
+  if (!isAdmin && !isCustomer) {
+    return _buildSystemMessage(message);
+  }
+
+  return _buildChatBubble(
+    message,
+    isAdmin: isAdmin,
+  );
+}
+///////////////////////////////////////////////////////////
+/// PAYMENT MESSAGE
+///////////////////////////////////////////////////////////
+
+Widget _buildPaymentMessage(
+  ChatMessageModel message,
+) {
+  final payment =
+      message.paymentData ?? {};
+
+  ///////////////////////////////////////////////////////////
+  /// PAYMENT DATA
+  ///////////////////////////////////////////////////////////
+
+  final amount =
+      (payment["amount"] ?? 0)
+          .toString();
+
+  final paymentMethod =
+      (payment["paymentMethodName"] ??
+              payment["paymentMethod"] ??
+              payment["method"] ??
+              "Payment")
+          .toString();
+
+  final status =
+      (payment["status"] ??
+              "pending")
+          .toString();
+
+  ///////////////////////////////////////////////////////////
+  /// QR IMAGE
+  ///////////////////////////////////////////////////////////
+
+  final qrImage =
+      (payment["qrImage"] ??
+              payment["screenshotUrl"] ??
+              payment["screenshot"] ??
+              payment["image"] ??
+              "")
+          .toString();
+
+  ///////////////////////////////////////////////////////////
+  /// VERIFICATION DATA
+  ///////////////////////////////////////////////////////////
+
+  final verifiedBy =
+      (payment["verifiedByName"] ??
+              "")
+          .toString();
+
+  final verifiedAt =
+      payment["verifiedAt"];
+
+  ///////////////////////////////////////////////////////////
+  /// STATUS
+  ///////////////////////////////////////////////////////////
+
+  final normalizedStatus =
+      status.toLowerCase();
+
+  final isSuccessful =
+      normalizedStatus ==
+              "successful" ||
+          normalizedStatus ==
+              "success" ||
+          normalizedStatus ==
+              "paid";
+
+  final isFailed =
+      normalizedStatus ==
+              "failed" ||
+          normalizedStatus ==
+              "rejected";
+
+  ///////////////////////////////////////////////////////////
+  /// STATUS COLOR
+  ///////////////////////////////////////////////////////////
+
+  Color statusColor;
+
+  if (isSuccessful) {
+    statusColor =
+        const Color(0xff2E7D32);
+  } else if (isFailed) {
+    statusColor =
+        const Color(0xffC62828);
+  } else {
+    statusColor =
+        const Color(0xffEF6C00);
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// CARD
+  ///////////////////////////////////////////////////////////
+
+  return Align(
+    alignment:
+        Alignment.centerRight,
+
+    child: Container(
+      width:
+          MediaQuery.of(context)
+                  .size
+                  .width *
+              .86,
+
+      margin:
+          const EdgeInsets.only(
+        bottom: 14,
+        top: 4,
+      ),
+
+      decoration:
+          BoxDecoration(
+        color: Colors.white,
+
+        borderRadius:
+            BorderRadius.circular(
+          24,
+        ),
+
+        border:
+            Border.all(
+          color:
+              const Color(
+            0xffF1E2E8,
+          ),
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color:
+                Colors.black
+                    .withOpacity(
+              .055,
+            ),
+            blurRadius: 22,
+            offset:
+                const Offset(
+              0,
+              9,
+            ),
+          ),
+        ],
+      ),
+
+      child: Padding(
+        padding:
+            const EdgeInsets.all(
+          17,
+        ),
+
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
+          children: [
+
+            //////////////////////////////////////////////////
+            /// HEADER
+            //////////////////////////////////////////////////
+
+            Row(
+              children: [
+
+                //////////////////////////////////////////////////
+                /// ICON
+                //////////////////////////////////////////////////
+
+                Container(
+                  width: 46,
+                  height: 46,
+
+                  decoration:
+                      BoxDecoration(
+                    gradient:
+                        const LinearGradient(
+                      colors: [
+                        Color(
+                          0xffFFCCE1,
+                        ),
+                        Color(
+                          0xffE91E63,
+                        ),
+                      ],
+
+                      begin:
+                          Alignment
+                              .topLeft,
+
+                      end:
+                          Alignment
+                              .bottomRight,
+                    ),
+
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      15,
+                    ),
+                  ),
+
+                  child:
+                      const Icon(
+                    Icons
+                        .payments_rounded,
+                    color:
+                        Colors.white,
+                    size: 23,
+                  ),
+                ),
+
+                const SizedBox(
+                  width: 12,
+                ),
+
+                //////////////////////////////////////////////////
+                /// TITLE
+                //////////////////////////////////////////////////
+
+                Expanded(
+                  child:
+                      Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment
+                            .start,
+
+                    children: const [
+
+                      Text(
+                        "Payment Request",
+
+                        style:
+                            TextStyle(
+                          color:
+                              plum,
+
+                          fontSize:
+                              15,
+
+                          fontWeight:
+                              FontWeight
+                                  .w900,
+                        ),
+                      ),
+
+                      SizedBox(
+                        height: 3,
+                      ),
+
+                      Text(
+                        "Payment requested from customer",
+
+                        style:
+                            TextStyle(
+                          color:
+                              muted,
+
+                          fontSize:
+                              10,
+
+                          fontWeight:
+                              FontWeight
+                                  .w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                //////////////////////////////////////////////////
+                /// STATUS
+                //////////////////////////////////////////////////
+
+                Container(
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        statusColor
+                            .withOpacity(
+                      .10,
+                    ),
+
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      30,
+                    ),
+                  ),
+
+                  child:
+                      Text(
+                    status
+                        .toUpperCase(),
+
+                    style:
+                        TextStyle(
+                      color:
+                          statusColor,
+
+                      fontSize:
+                          8.5,
+
+                      fontWeight:
+                          FontWeight
+                              .w900,
+
+                      letterSpacing:
+                          .4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(
+              height: 18,
+            ),
+
+            //////////////////////////////////////////////////
+            /// AMOUNT
+            //////////////////////////////////////////////////
+
+            Container(
+              width:
+                  double.infinity,
+
+              padding:
+                  const EdgeInsets
+                      .all(
+                15,
+              ),
+
+              decoration:
+                  BoxDecoration(
+                color:
+                    const Color(
+                  0xffFFF7FA,
+                ),
+
+                borderRadius:
+                    BorderRadius
+                        .circular(
+                  17,
+                ),
+              ),
+
+              child: Row(
+                children: [
+
+                  const Icon(
+                    Icons
+                        .currency_rupee_rounded,
+
+                    color:
+                        primary,
+
+                    size: 20,
+                  ),
+
+                  const SizedBox(
+                    width: 8,
+                  ),
+
+                  const Text(
+                    "Amount",
+
+                    style:
+                        TextStyle(
+                      color:
+                          muted,
+
+                      fontSize:
+                          11,
+
+                      fontWeight:
+                          FontWeight
+                              .w600,
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  Text(
+                    "₹$amount",
+
+                    style:
+                        const TextStyle(
+                      color:
+                          plum,
+
+                      fontSize:
+                          20,
+
+                      fontWeight:
+                          FontWeight
+                              .w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(
+              height: 12,
+            ),
+
+            //////////////////////////////////////////////////
+            /// PAYMENT METHOD
+            //////////////////////////////////////////////////
+
+            _paymentInfoRow(
+              Icons
+                  .account_balance_wallet_outlined,
+
+              "Payment method",
+
+              paymentMethod,
+            ),
+
+            //////////////////////////////////////////////////
+            /// QR CODE
+            //////////////////////////////////////////////////
+
+            if (qrImage.isNotEmpty) ...[
+              const SizedBox(
+                height: 16,
+              ),
+
+              const Text(
+                "Scan & Pay",
+
+                style:
+                    TextStyle(
+                  color:
+                      plum,
+
+                  fontSize:
+                      11,
+
+                  fontWeight:
+                      FontWeight
+                          .w800,
+                ),
+              ),
+
+              const SizedBox(
+                height: 9,
+              ),
+
+              Container(
+                width:
+                    double.infinity,
+
+                padding:
+                    const EdgeInsets
+                        .all(
+                  10,
+                ),
+
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(
+                    0xffFAF7F8,
+                  ),
+
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    18,
+                  ),
+
+                  border:
+                      Border.all(
+                    color:
+                        const Color(
+                      0xffF0E4E8,
+                    ),
+                  ),
+                ),
+
+                child:
+                    ClipRRect(
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    12,
+                  ),
+
+                  child:
+                      GestureDetector(
+                    onTap: () {
+                      _showPaymentImage(
+                        qrImage,
+                      );
+                    },
+
+                    child:
+                        Image.network(
+                      qrImage,
+
+                      width:
+                          double.infinity,
+
+                      height:
+                          230,
+
+                      fit:
+                          BoxFit.contain,
+
+                      errorBuilder:
+                          (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        return Container(
+                          height:
+                              210,
+
+                          decoration:
+                              BoxDecoration(
+                            color:
+                                const Color(
+                              0xffF8F1F4,
+                            ),
+
+                            borderRadius:
+                                BorderRadius
+                                    .circular(
+                              14,
+                            ),
+                          ),
+
+                          child:
+                              const Center(
+                            child:
+                                Column(
+                              mainAxisSize:
+                                  MainAxisSize
+                                      .min,
+
+                              children: [
+
+                                Icon(
+                                  Icons
+                                      .broken_image_outlined,
+
+                                  color:
+                                      muted,
+
+                                  size:
+                                      32,
+                                ),
+
+                                SizedBox(
+                                  height:
+                                      8,
+                                ),
+
+                                Text(
+                                  "QR unavailable",
+
+                                  style:
+                                      TextStyle(
+                                    color:
+                                        muted,
+
+                                    fontSize:
+                                        11,
+
+                                    fontWeight:
+                                        FontWeight
+                                            .w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            //////////////////////////////////////////////////
+            /// VERIFIED INFORMATION
+            //////////////////////////////////////////////////
+
+            if (isSuccessful &&
+                verifiedBy
+                    .isNotEmpty) ...[
+              const SizedBox(
+                height: 14,
+              ),
+
+              Container(
+                padding:
+                    const EdgeInsets
+                        .all(
+                  12,
+                ),
+
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(
+                    0xffF1F8F3,
+                  ),
+
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    15,
+                  ),
+                ),
+
+                child: Row(
+                  children: [
+
+                    const Icon(
+                      Icons
+                          .verified_rounded,
+
+                      color:
+                          Color(
+                        0xff2E7D32,
+                      ),
+
+                      size: 19,
+                    ),
+
+                    const SizedBox(
+                      width: 9,
+                    ),
+
+                    Expanded(
+                      child:
+                          Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+
+                        children: [
+
+                          const Text(
+                            "Payment verified",
+
+                            style:
+                                TextStyle(
+                              color:
+                                  Color(
+                                0xff2E7D32,
+                              ),
+
+                              fontSize:
+                                  10,
+
+                              fontWeight:
+                                  FontWeight
+                                      .w900,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 2,
+                          ),
+
+                          Text(
+                            "Verified by $verifiedBy",
+
+                            style:
+                                const TextStyle(
+                              color:
+                                  Color(
+                                0xff558B60,
+                              ),
+
+                              fontSize:
+                                  9,
+
+                              fontWeight:
+                                  FontWeight
+                                      .w600,
+                            ),
+                          ),
+
+                          if (verifiedAt !=
+                              null) ...[
+                            const SizedBox(
+                              height: 2,
+                            ),
+
+                            Text(
+                              "Payment confirmed",
+
+                              style:
+                                  const TextStyle(
+                                color:
+                                    Color(
+                                  0xff558B60,
+                                ),
+
+                                fontSize:
+                                    8.5,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            //////////////////////////////////////////////////
+            /// VERIFY BUTTON
+            //////////////////////////////////////////////////
+
+            if (!isSuccessful &&
+                !isFailed) ...[
+              const SizedBox(
+                height: 16,
+              ),
+
+              SizedBox(
+                width:
+                    double.infinity,
+
+                height: 48,
+
+                child:
+                    ElevatedButton.icon(
+                  onPressed: () {
+                    _confirmPayment(
+                      message,
+                    );
+                  },
+
+                  icon:
+                      const Icon(
+                    Icons
+                        .verified_rounded,
+
+                    size: 18,
+                  ),
+
+                  label:
+                      const Text(
+                    "Mark Payment Successful",
+
+                    style:
+                        TextStyle(
+                      fontWeight:
+                          FontWeight
+                              .w800,
+                    ),
+                  ),
+
+                  style:
+                      ElevatedButton
+                          .styleFrom(
+                    backgroundColor:
+                        primary,
+
+                    foregroundColor:
+                        Colors.white,
+
+                    elevation:
+                        0,
+
+                    shape:
+                        RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius
+                              .circular(
+                        15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            //////////////////////////////////////////////////
+            /// TIME
+            //////////////////////////////////////////////////
+
+            if (message.createdAt !=
+                null) ...[
+              const SizedBox(
+                height: 9,
+              ),
+
+              Align(
+                alignment:
+                    Alignment
+                        .centerRight,
+
+                child:
+                    Text(
+                  _formatMessageTime(
+                    message.createdAt!,
+                  ),
+
+                  style:
+                      const TextStyle(
+                    color:
+                        muted,
+
+                    fontSize:
+                        8.5,
+
+                    fontWeight:
+                        FontWeight
+                            .w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+///////////////////////////////////////////////////////////
+/// PAYMENT IMAGE PREVIEW
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// PAYMENT INFO ROW
+///////////////////////////////////////////////////////////
+
+Widget _paymentInfoRow(
+  IconData icon,
+  String title,
+  String value,
+) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(
+      vertical: 5,
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xffFFF1F6),
+            borderRadius:
+                BorderRadius.circular(11),
+          ),
+          child: Icon(
+            icon,
+            color: primary,
+            size: 16,
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+
+        Text(
+          value,
+          style: const TextStyle(
+            color: plum,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+void _showPaymentImage(
+  String imageUrl,
+) {
+  showDialog(
+    context: context,
+    barrierColor:
+        Colors.black.withOpacity(.82),
+    builder: (_) {
+      return Dialog(
+        backgroundColor:
+            Colors.transparent,
+        insetPadding:
+            const EdgeInsets.all(18),
+        child: Stack(
+          children: [
+
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(22),
+              child: InteractiveViewer(
+                minScale: .8,
+                maxScale: 4,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (
+                    context,
+                    error,
+                    stackTrace,
+                  ) {
+                    return Container(
+                      height: 300,
+                      color: Colors.white,
+                      child: const Center(
+                        child: Icon(
+                          Icons
+                              .broken_image_outlined,
+                          size: 40,
+                          color: muted,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Material(
+                color: Colors.black
+                    .withOpacity(.55),
+                shape:
+                    const CircleBorder(),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+///////////////////////////////////////////////////////////
+/// CONFIRM PAYMENT
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// MESSAGE TYPE PICKER
+///////////////////////////////////////////////////////////
+
+void _showMessageTypePicker() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          28,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(30),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+
+            //////////////////////////////////////////////////
+            /// HANDLE
+            //////////////////////////////////////////////////
+
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color:
+                      const Color(0xffE6DDE1),
+                  borderRadius:
+                      BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            //////////////////////////////////////////////////
+            /// TITLE
+            //////////////////////////////////////////////////
+
+            const Text(
+              "Send something",
+              style: TextStyle(
+                color: plum,
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+
+            const SizedBox(height: 5),
+
+            const Text(
+              "Choose what you want to send to the customer.",
+              style: TextStyle(
+                color: muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            //////////////////////////////////////////////////
+            /// TEXT
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.chat_bubble_outline_rounded,
+              title: "Message",
+              subtitle:
+                  "Send a normal chat message",
+              type: AdminMessageType.text,
+              color: primary,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.text,
+                );
+              },
+            ),
+
+            //////////////////////////////////////////////////
+            /// PAYMENT
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.payments_outlined,
+              title: "Payment",
+              subtitle:
+                  "Send payment information",
+              type: AdminMessageType.payment,
+              color: Colors.green,
+              onTap: () {
+  Navigator.pop(sheetContext);
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AdminPaymentScreen(
+        orderId: widget.orderId,
+      ),
+    ),
+  );
+},
+            ),
+
+            //////////////////////////////////////////////////
+            /// PACKING
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.inventory_2_outlined,
+              title: "Packing",
+              subtitle:
+                  "Send packing update",
+              type: AdminMessageType.packing,
+              color: Colors.orange,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.packing,
+                );
+              },
+            ),
+
+            //////////////////////////////////////////////////
+            /// SHIPMENT
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.local_shipping_outlined,
+              title: "Shipment",
+              subtitle:
+                  "Send shipment information",
+              type: AdminMessageType.shipment,
+              color: Colors.deepPurple,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.shipment,
+                );
+              },
+            ),
+
+            //////////////////////////////////////////////////
+            /// TRACKING
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.location_on_outlined,
+              title: "Tracking",
+              subtitle:
+                  "Add tracking information",
+              type: AdminMessageType.tracking,
+              color: Colors.blue,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.tracking,
+                );
+              },
+            ),
+
+            //////////////////////////////////////////////////
+            /// INVOICE
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.receipt_long_outlined,
+              title: "Invoice",
+              subtitle:
+                  "Send invoice",
+              type: AdminMessageType.invoice,
+              color: Colors.indigo,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.invoice,
+                );
+              },
+            ),
+
+            //////////////////////////////////////////////////
+            /// STATUS
+            //////////////////////////////////////////////////
+
+            _messageTypeTile(
+              icon:
+                  Icons.info_outline_rounded,
+              title: "Status",
+              subtitle:
+                  "Send order status update",
+              type: AdminMessageType.status,
+              color: Colors.teal,
+              onTap: () {
+                Navigator.pop(sheetContext);
+
+                _selectMessageType(
+                  AdminMessageType.status,
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+///////////////////////////////////////////////////////////
+/// MESSAGE TYPE TILE
+///////////////////////////////////////////////////////////
+
+Widget _messageTypeTile({
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  required AdminMessageType type,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  final selected =
+      _selectedMessageType == type;
+
+  return GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration:
+          const Duration(milliseconds: 160),
+
+      margin:
+          const EdgeInsets.only(bottom: 9),
+
+      padding:
+          const EdgeInsets.all(12),
+
+      decoration: BoxDecoration(
+        color: selected
+            ? color.withOpacity(.08)
+            : const Color(0xffFAF8F9),
+
+        borderRadius:
+            BorderRadius.circular(17),
+
+        border: Border.all(
+          color: selected
+              ? color.withOpacity(.28)
+              : const Color(0xffF0E7EB),
+        ),
+      ),
+
+      child: Row(
+        children: [
+
+          //////////////////////////////////////////////////
+          /// ICON
+          //////////////////////////////////////////////////
+
+          Container(
+            width: 42,
+            height: 42,
+
+            decoration: BoxDecoration(
+              color:
+                  color.withOpacity(.11),
+
+              borderRadius:
+                  BorderRadius.circular(13),
+            ),
+
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
+
+          const SizedBox(
+            width: 12,
+          ),
+
+          //////////////////////////////////////////////////
+          /// TEXT
+          //////////////////////////////////////////////////
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: plum,
+                    fontSize: 13,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 3,
+                ),
+
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: muted,
+                    fontSize: 9.5,
+                    fontWeight:
+                        FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          //////////////////////////////////////////////////
+          /// SELECTED
+          //////////////////////////////////////////////////
+
+          Icon(
+            selected
+                ? Icons.check_circle_rounded
+                : Icons.arrow_forward_ios_rounded,
+
+            color: selected
+                ? color
+                : const Color(0xffB9AAB1),
+
+            size: selected ? 20 : 13,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+///////////////////////////////////////////////////////////
+/// SELECT MESSAGE TYPE
+///////////////////////////////////////////////////////////
+
+void _selectMessageType(
+  AdminMessageType type,
+) {
+  setState(() {
+    _selectedMessageType = type;
+  });
+
+  /////////////////////////////////////////////////////////
+  /// NORMAL TEXT
+  /////////////////////////////////////////////////////////
+
+  if (type == AdminMessageType.text) {
+    _messageFocusNode.requestFocus();
+    return;
+  }
+
+  /////////////////////////////////////////////////////////
+  /// OTHER TYPES
+  /////////////////////////////////////////////////////////
+
+  ScaffoldMessenger.of(context)
+      .hideCurrentSnackBar();
+
+  ScaffoldMessenger.of(context)
+      .showSnackBar(
+    SnackBar(
+      behavior:
+          SnackBarBehavior.floating,
+
+      margin:
+          const EdgeInsets.all(16),
+
+      backgroundColor:
+          const Color(0xff241B2F),
+
+      shape:
+          RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(16),
+      ),
+
+      content: Text(
+        "${_messageTypeName(type)} selected",
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight:
+              FontWeight.w700,
+        ),
+      ),
+    ),
+  );
+}
+String _messageTypeName(
+  AdminMessageType type,
+) {
+  switch (type) {
+    case AdminMessageType.text:
+      return "Message";
+
+    case AdminMessageType.payment:
+      return "Payment";
+
+    case AdminMessageType.packing:
+      return "Packing";
+
+    case AdminMessageType.shipment:
+      return "Shipment";
+
+    case AdminMessageType.tracking:
+      return "Tracking";
+
+    case AdminMessageType.invoice:
+      return "Invoice";
+
+    case AdminMessageType.status:
+      return "Status";
+  }
+}
+Future<void> _confirmPayment(
+  ChatMessageModel message,
+) async {
+  final payment =
+      message.paymentData ?? {};
+
+  final amount =
+      (payment["amount"] ?? 0).toDouble();
+
+  final confirmed =
+      await showDialog<bool>(
+    context: context,
+    builder: (_) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(22),
+        ),
+        title: const Text(
+          "Confirm Payment",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: plum,
+          ),
+        ),
+        content: Text(
+          "Mark payment of ₹${amount.toStringAsFixed(0)} as successful?",
+          style: const TextStyle(
+            color: muted,
+          ),
+        ),
+        actions: [
+
+          TextButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                false,
+              );
+            },
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: muted,
+              ),
+            ),
+          ),
+
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                true,
+              );
+            },
+            style:
+                ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor:
+                  Colors.white,
+              elevation: 0,
+              shape:
+                  RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              "Confirm",
+              style: TextStyle(
+                fontWeight:
+                    FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed != true) {
+    return;
+  }
+
+  try {
+  await AdminChatService.instance
+      .markPaymentSuccessful(
+    orderId: widget.orderId,
+    amount: amount,
+    paymentMethodId:
+        payment["paymentMethodId"]?.toString() ?? "",
+    paymentMethodName:
+        payment["paymentMethodName"]?.toString() ?? "",
+  );
+
+  if (!mounted) return;
+
+  _showSuccess(
+    "Payment marked successful",
+  );
+} catch (e) {
+  if (!mounted) return;
+
+  _showError(
+    "Unable to verify payment",
+  );
+
+  debugPrint(
+    "Payment verification error: $e",
+  );
+}
+}
+///////////////////////////////////////////////////////////
+/// SUCCESS SNACKBAR
+///////////////////////////////////////////////////////////
+
+void _showSuccess(
+  String message,
+) {
+  ScaffoldMessenger.of(context)
+      .hideCurrentSnackBar();
+
+  ScaffoldMessenger.of(context)
+      .showSnackBar(
+    SnackBar(
+      behavior:
+          SnackBarBehavior.floating,
+      margin:
+          const EdgeInsets.all(16),
+      backgroundColor:
+          const Color(0xff2E7D32),
+      shape:
+          RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(16),
+      ),
+      content: Row(
+        children: [
+
+          const Icon(
+            Icons.check_circle_rounded,
+            color: Colors.white,
+          ),
+
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight:
+                    FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   ///////////////////////////////////////////////////////////
   /// CHAT BUBBLE
@@ -2153,45 +3739,29 @@ String _monthName(int month) {
           /// ATTACHMENT
           //////////////////////////////////////////////////
 
-          Container(
-            width: 44,
-            height: 44,
+          //////////////////////////////////////////////////
+/// ATTACHMENT
+//////////////////////////////////////////////////
 
-            decoration:
-                BoxDecoration(
-              color:
-                  const Color(
-                0xffFFF1F6,
-              ),
-
-              borderRadius:
-                  BorderRadius.circular(
-                15,
-              ),
-            ),
-
-            child:
-                IconButton(
-              onPressed:
-                  _sending
-                      ? null
-                      : () {
-                          // Future:
-                          // image / PDF / invoice
-                        },
-
-              icon:
-                  const Icon(
-                Icons
-                    .add_rounded,
-
-                color:
-                    primary,
-
-                size: 21,
-              ),
-            ),
-          ),
+Container(
+  width: 44,
+  height: 44,
+  decoration: BoxDecoration(
+    color: const Color(0xffFFF1F6),
+    borderRadius:
+        BorderRadius.circular(15),
+  ),
+  child: IconButton(
+    onPressed: _sending
+        ? null
+        : _showMessageTypePicker,
+    icon: const Icon(
+      Icons.add_rounded,
+      color: primary,
+      size: 21,
+    ),
+  ),
+),
 
           const SizedBox(
             width: 8,

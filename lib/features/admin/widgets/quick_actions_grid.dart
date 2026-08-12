@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../orders/services/admin_order_service.dart';
 import 'dashboard_tile.dart';
 import 'permission_gate.dart';
 
 class QuickActionsGrid extends StatelessWidget {
+  ///////////////////////////////////////////////////////////
+  /// CALLBACKS
+  ///////////////////////////////////////////////////////////
+
   final VoidCallback onOrdersTap;
+
+  final VoidCallback onPaymentsTap;
 
   const QuickActionsGrid({
     super.key,
     required this.onOrdersTap,
+    required this.onPaymentsTap,
   });
 
   @override
@@ -46,6 +52,7 @@ class QuickActionsGrid extends StatelessWidget {
 
         GridView.count(
           shrinkWrap: true,
+
           physics:
               const NeverScrollableScrollPhysics(),
 
@@ -59,9 +66,9 @@ class QuickActionsGrid extends StatelessWidget {
 
           children: [
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// ORDERS
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -71,20 +78,23 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.shopping_bag_outlined,
 
-                title: "Orders",
+                title:
+                    "Orders",
 
                 subtitle:
                     "Manage customer orders",
 
-                badge: 12,
+                badge:
+                    12,
 
-                onTap: onOrdersTap,
+                onTap:
+                    onOrdersTap,
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// CHATS
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -94,25 +104,28 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.chat_bubble_outline,
 
-                title: "Chats",
+                title:
+                    "Chats",
 
                 subtitle:
                     "Customer conversations",
 
-                badge: 4,
+                badge:
+                    4,
 
                 color:
                     Colors.blue,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Admin Chat workspace
                 },
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// PACKING
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -122,25 +135,28 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.inventory_2_outlined,
 
-                title: "Packing",
+                title:
+                    "Packing",
 
                 subtitle:
                     "Packing workspace",
 
-                badge: 9,
+                badge:
+                    9,
 
                 color:
                     Colors.orange,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Packing workspace
                 },
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// PAYMENTS
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -150,25 +166,26 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.payments_outlined,
 
-                title: "Payments",
+                title:
+                    "Payments",
 
                 subtitle:
-                    "Verify customer payments",
+                    "Manage payment scanners",
 
-                badge: 5,
+                badge:
+                    5,
 
                 color:
                     Colors.green,
 
-                onTap: () {
-                  // TODO
-                },
+                onTap:
+                    onPaymentsTap,
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// SHIPPING
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -178,7 +195,8 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.local_shipping_outlined,
 
-                title: "Shipping",
+                title:
+                    "Shipping",
 
                 subtitle:
                     "Dispatch orders",
@@ -187,14 +205,15 @@ class QuickActionsGrid extends StatelessWidget {
                     Colors.deepPurple,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Shipping workspace
                 },
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// INVENTORY
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -204,7 +223,8 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.warehouse_outlined,
 
-                title: "Inventory",
+                title:
+                    "Inventory",
 
                 subtitle:
                     "Stock management",
@@ -213,14 +233,15 @@ class QuickActionsGrid extends StatelessWidget {
                     Colors.teal,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Inventory workspace
                 },
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// REPORTS
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -230,7 +251,8 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.bar_chart_rounded,
 
-                title: "Reports",
+                title:
+                    "Reports",
 
                 subtitle:
                     "Business analytics",
@@ -239,14 +261,15 @@ class QuickActionsGrid extends StatelessWidget {
                     Colors.indigo,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Reports
                 },
               ),
             ),
 
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
             /// STAFF
-            /////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
 
             PermissionGate(
               allow: (admin) =>
@@ -256,7 +279,8 @@ class QuickActionsGrid extends StatelessWidget {
                 icon:
                     Icons.people_alt_outlined,
 
-                title: "Staff",
+                title:
+                    "Staff",
 
                 subtitle:
                     "Manage administrators",
@@ -265,7 +289,8 @@ class QuickActionsGrid extends StatelessWidget {
                     Colors.pink,
 
                 onTap: () {
-                  // TODO
+                  // TODO:
+                  // Open Staff management
                 },
               ),
             ),

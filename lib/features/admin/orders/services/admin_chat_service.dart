@@ -475,4 +475,211 @@ class AdminChatService {
       "unreadAdmin": 0,
     });
   }
+  ///////////////////////////////////////////////////////////
+/// MARK PAYMENT SUCCESSFUL
+///////////////////////////////////////////////////////////
+
+Future<void> markPaymentSuccessful({
+  required String orderId,
+  required double amount,
+  required String paymentMethodId,
+  required String paymentMethodName,
+}) async {
+  final adminId = _adminId;
+
+  final now =
+      FieldValue.serverTimestamp();
+
+  final orderRef = _firestore
+      .collection("orders")
+      .doc(orderId);
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final messageRef = chatRef
+      .collection("messages")
+      .doc();
+
+  final batch = _firestore.batch();
+
+  /////////////////////////////////////////////////////////
+  /// 1. UPDATE ORDER PAYMENT STATUS
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    orderRef,
+    {
+      "paymentStatus": "Paid",
+      "paymentVerifiedBy": adminId,
+      "paymentVerifiedAt": now,
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// 2. CREATE PAYMENT CHAT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  batch.set(
+    messageRef,
+    {
+      "senderId": adminId,
+
+      "senderType": "admin",
+
+      "type": "payment",
+
+      "text":
+          "Payment verified successfully",
+
+      "image": "",
+
+      "pdf": "",
+
+      "orderId": orderId,
+
+      "paymentData": {
+        "status": "Paid",
+
+        "amount": amount,
+
+        "paymentMethodId":
+            paymentMethodId,
+
+        "paymentMethodName":
+            paymentMethodName,
+
+        "verifiedBy": adminId,
+
+        "verifiedAt": now,
+      },
+
+      "createdAt": now,
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// 3. UPDATE ORDER CHAT SUMMARY
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    chatRef,
+    {
+      "lastMessage":
+          "Payment verified successfully",
+
+      "lastMessageType":
+          "payment",
+
+      "lastSenderType":
+          "admin",
+
+      "lastSenderId":
+          adminId,
+
+      "lastMessageTime":
+          now,
+
+      "updatedAt":
+          now,
+
+      "unreadCustomer":
+          FieldValue.increment(1),
+
+      "unreadAdmin": 0,
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// 4. COMMIT EVERYTHING TOGETHER
+  /////////////////////////////////////////////////////////
+
+  await batch.commit();
+}
+/////////////////////////////////////////////////////////
+/// SEND PAYMENT REQUEST
+/////////////////////////////////////////////////////////
+
+Future<void> sendPaymentRequest({
+  required String orderId,
+  required double amount,
+  required String paymentMethodId,
+  required String paymentMethodName,
+  required String qrImage,
+}) async {
+  final now = FieldValue.serverTimestamp();
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final messageRef = chatRef
+      .collection("messages")
+      .doc();
+
+  final paymentData = {
+    "amount": amount,
+    "paymentMethodId": paymentMethodId,
+    "paymentMethodName": paymentMethodName,
+    "qrImage": qrImage,
+    "status": "pending",
+  };
+
+  final batch = _firestore.batch();
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  batch.set(messageRef, {
+    "senderId": _adminId,
+    "senderType": "admin",
+    "type": "payment",
+
+    "text": "Payment request",
+
+    "image": "",
+    "pdf": "",
+
+    "orderId": orderId,
+
+    "orderSummary": null,
+
+    "paymentData": paymentData,
+
+    "packingData": null,
+    "shipmentData": null,
+    "trackingData": null,
+    "invoiceData": null,
+    "statusData": null,
+
+    "createdAt": now,
+  });
+
+  /////////////////////////////////////////////////////////
+  /// CHAT SUMMARY
+  /////////////////////////////////////////////////////////
+
+  batch.update(chatRef, {
+    "lastMessage": "Payment request",
+
+    "lastMessageType": "payment",
+
+    "lastSenderType": "admin",
+
+    "lastSenderId": _adminId,
+
+    "lastMessageTime": now,
+
+    "updatedAt": now,
+
+    "unreadCustomer":
+        FieldValue.increment(1),
+
+    "unreadAdmin": 0,
+  });
+
+  await batch.commit();
+}
 }

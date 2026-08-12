@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:tanishka/models/chat_message_model.dart';
+
 class AdminChatService {
   AdminChatService._();
 
@@ -14,6 +15,10 @@ class AdminChatService {
   final FirebaseAuth _auth =
       FirebaseAuth.instance;
 
+  ///////////////////////////////////////////////////////////
+  /// ADMIN ID
+  ///////////////////////////////////////////////////////////
+
   String get _adminId {
     final user = _auth.currentUser;
 
@@ -24,9 +29,9 @@ class AdminChatService {
     return user.uid;
   }
 
-  /////////////////////////////////////////////////////////
-  /// Messages Stream
-  /////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
+  /// MESSAGES STREAM
+  ///////////////////////////////////////////////////////////
 
   Stream<List<ChatMessageModel>> messagesStream(
     String orderId,
@@ -49,18 +54,154 @@ class AdminChatService {
         );
   }
 
-  /////////////////////////////////////////////////////////
-  /// Send Admin Text Message
-  /////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
+  /// SEND ADMIN TEXT MESSAGE
+  ///////////////////////////////////////////////////////////
 
   Future<void> sendMessage({
     required String orderId,
     required String text,
   }) async {
-    if (text.trim().isEmpty) {
+    final value = text.trim();
+
+    if (value.isEmpty) {
       return;
     }
 
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "text",
+      text: value,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND PAYMENT MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendPaymentMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> paymentData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "payment",
+      text: text.trim(),
+      paymentData: paymentData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND PACKING MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendPackingMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> packingData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "packing",
+      text: text.trim(),
+      packingData: packingData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND SHIPMENT MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendShipmentMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> shipmentData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "shipment",
+      text: text.trim(),
+      shipmentData: shipmentData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND TRACKING MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendTrackingMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> trackingData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "tracking",
+      text: text.trim(),
+      trackingData: trackingData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND INVOICE MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendInvoiceMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> invoiceData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "invoice",
+      text: text.trim(),
+      invoiceData: invoiceData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND STATUS MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendStatusMessage({
+    required String orderId,
+    required String text,
+    required Map<String, dynamic> statusData,
+  }) async {
+    await _sendAdminMessage(
+      orderId: orderId,
+      type: "status",
+      text: text.trim(),
+      statusData: statusData,
+    );
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// INTERNAL ADMIN MESSAGE SENDER
+  ///
+  /// One Firestore batch:
+  ///
+  /// 1. Create message
+  /// 2. Update orderChats summary
+  ///
+  ///////////////////////////////////////////////////////////
+
+  Future<void> _sendAdminMessage({
+    required String orderId,
+    required String type,
+    required String text,
+
+    String image = "",
+    String pdf = "",
+
+    Map<String, dynamic>? paymentData,
+    Map<String, dynamic>? packingData,
+    Map<String, dynamic>? shipmentData,
+    Map<String, dynamic>? trackingData,
+    Map<String, dynamic>? invoiceData,
+    Map<String, dynamic>? statusData,
+  }) async {
     final now =
         FieldValue.serverTimestamp();
 
@@ -69,22 +210,164 @@ class AdminChatService {
         .doc(orderId);
 
     final messageRef =
-        chatRef.collection("messages").doc();
-
-    final batch = _firestore.batch();
+        chatRef
+            .collection("messages")
+            .doc();
 
     /////////////////////////////////////////////////////////
-    /// Message
+    /// MESSAGE DATA
     /////////////////////////////////////////////////////////
 
-    batch.set(messageRef, {
+    final Map<String, dynamic> messageData = {
       "senderId": _adminId,
 
       "senderType": "admin",
 
-      "type": "text",
+      "type": type,
 
-      "text": text.trim(),
+      "text": text,
+
+      "image": image,
+
+      "pdf": pdf,
+
+      "orderId": orderId,
+
+      "createdAt": now,
+    };
+
+    /////////////////////////////////////////////////////////
+    /// SPECIAL DATA
+    /////////////////////////////////////////////////////////
+
+    if (paymentData != null) {
+      messageData["paymentData"] =
+          paymentData;
+    }
+
+    if (packingData != null) {
+      messageData["packingData"] =
+          packingData;
+    }
+
+    if (shipmentData != null) {
+      messageData["shipmentData"] =
+          shipmentData;
+    }
+
+    if (trackingData != null) {
+      messageData["trackingData"] =
+          trackingData;
+    }
+
+    if (invoiceData != null) {
+      messageData["invoiceData"] =
+          invoiceData;
+    }
+
+    if (statusData != null) {
+      messageData["statusData"] =
+          statusData;
+    }
+
+    /////////////////////////////////////////////////////////
+    /// BATCH
+    /////////////////////////////////////////////////////////
+
+    final batch =
+        _firestore.batch();
+
+    /////////////////////////////////////////////////////////
+    /// CREATE MESSAGE
+    /////////////////////////////////////////////////////////
+
+    batch.set(
+      messageRef,
+      messageData,
+    );
+
+    /////////////////////////////////////////////////////////
+    /// UPDATE CHAT SUMMARY
+    /////////////////////////////////////////////////////////
+
+    batch.update(
+      chatRef,
+      {
+        "lastMessage": text,
+
+        "lastMessageType": type,
+
+        "lastSenderType": "admin",
+
+        "lastSenderId": _adminId,
+
+        "lastMessageTime": now,
+
+        "updatedAt": now,
+
+        "unreadCustomer":
+            FieldValue.increment(1),
+
+        "unreadAdmin": 0,
+      },
+    );
+
+    /////////////////////////////////////////////////////////
+    /// COMMIT
+    /////////////////////////////////////////////////////////
+
+    await batch.commit();
+  }
+
+  ///////////////////////////////////////////////////////////
+  /// SEND SYSTEM MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  Future<void> sendSystemMessage({
+    required String orderId,
+    required String message,
+    required String type,
+
+    Map<String, dynamic>? orderSummary,
+    Map<String, dynamic>? paymentData,
+    Map<String, dynamic>? packingData,
+    Map<String, dynamic>? shipmentData,
+    Map<String, dynamic>? trackingData,
+    Map<String, dynamic>? invoiceData,
+    Map<String, dynamic>? statusData,
+  }) async {
+    final text =
+        message.trim();
+
+    if (text.isEmpty) {
+      return;
+    }
+
+    final now =
+        FieldValue.serverTimestamp();
+
+    final chatRef =
+        _firestore
+            .collection("orderChats")
+            .doc(orderId);
+
+    final messageRef =
+        chatRef
+            .collection("messages")
+            .doc();
+
+    /////////////////////////////////////////////////////////
+    /// MESSAGE DATA
+    /////////////////////////////////////////////////////////
+
+    final Map<String, dynamic> messageData = {
+      "senderId": "system",
+
+      "senderType": "system",
+
+      "type": type,
+
+      "text": text,
 
       "image": "",
 
@@ -93,37 +376,94 @@ class AdminChatService {
       "orderId": orderId,
 
       "createdAt": now,
-    });
+    };
 
     /////////////////////////////////////////////////////////
-    /// Chat Summary
+    /// SPECIAL DATA
     /////////////////////////////////////////////////////////
 
-    batch.update(chatRef, {
-      "lastMessage": text.trim(),
+    if (orderSummary != null) {
+      messageData["orderSummary"] =
+          orderSummary;
+    }
 
-      "lastMessageType": "text",
+    if (paymentData != null) {
+      messageData["paymentData"] =
+          paymentData;
+    }
 
-      "lastSenderType": "admin",
+    if (packingData != null) {
+      messageData["packingData"] =
+          packingData;
+    }
 
-      "lastSenderId": _adminId,
+    if (shipmentData != null) {
+      messageData["shipmentData"] =
+          shipmentData;
+    }
 
-      "lastMessageTime": now,
+    if (trackingData != null) {
+      messageData["trackingData"] =
+          trackingData;
+    }
 
-      "updatedAt": now,
+    if (invoiceData != null) {
+      messageData["invoiceData"] =
+          invoiceData;
+    }
 
-      "unreadCustomer":
-          FieldValue.increment(1),
+    if (statusData != null) {
+      messageData["statusData"] =
+          statusData;
+    }
 
-      "unreadAdmin": 0,
-    });
+    /////////////////////////////////////////////////////////
+    /// BATCH
+    /////////////////////////////////////////////////////////
+
+    final batch =
+        _firestore.batch();
+
+    /////////////////////////////////////////////////////////
+    /// CREATE MESSAGE
+    /////////////////////////////////////////////////////////
+
+    batch.set(
+      messageRef,
+      messageData,
+    );
+
+    /////////////////////////////////////////////////////////
+    /// UPDATE CHAT SUMMARY
+    /////////////////////////////////////////////////////////
+
+    batch.update(
+      chatRef,
+      {
+        "lastMessage": text,
+
+        "lastMessageType": type,
+
+        "lastSenderType": "system",
+
+        "lastSenderId": "system",
+
+        "lastMessageTime": now,
+
+        "updatedAt": now,
+      },
+    );
+
+    /////////////////////////////////////////////////////////
+    /// COMMIT
+    /////////////////////////////////////////////////////////
 
     await batch.commit();
   }
 
-  /////////////////////////////////////////////////////////
-  /// Mark Read
-  /////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
+  /// MARK ADMIN CHAT AS READ
+  ///////////////////////////////////////////////////////////
 
   Future<void> markAsRead(
     String orderId,
@@ -134,61 +474,5 @@ class AdminChatService {
         .update({
       "unreadAdmin": 0,
     });
-  }
-
-  /////////////////////////////////////////////////////////
-  /// Send System Message
-  /////////////////////////////////////////////////////////
-
-  Future<void> sendSystemMessage({
-    required String orderId,
-    required String message,
-    required String type,
-  }) async {
-    final now =
-        FieldValue.serverTimestamp();
-
-    final chatRef = _firestore
-        .collection("orderChats")
-        .doc(orderId);
-
-    final messageRef =
-        chatRef.collection("messages").doc();
-
-    final batch = _firestore.batch();
-
-    batch.set(messageRef, {
-      "senderId": "system",
-
-      "senderType": "system",
-
-      "type": type,
-
-      "text": message,
-
-      "image": "",
-
-      "pdf": "",
-
-      "orderId": orderId,
-
-      "createdAt": now,
-    });
-
-    batch.update(chatRef, {
-      "lastMessage": message,
-
-      "lastMessageType": type,
-
-      "lastSenderType": "system",
-
-      "lastSenderId": "system",
-
-      "lastMessageTime": now,
-
-      "updatedAt": now,
-    });
-
-    await batch.commit();
   }
 }

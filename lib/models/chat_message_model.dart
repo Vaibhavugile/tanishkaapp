@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChatMessageModel {
   final String id;
 
+  ///////////////////////////////////////////////////////////
+  /// SENDER
+  ///////////////////////////////////////////////////////////
+
   final String senderId;
 
   /// customer
@@ -10,14 +14,24 @@ class ChatMessageModel {
   /// system
   final String senderType;
 
+  ///////////////////////////////////////////////////////////
+  /// MESSAGE TYPE
+  ///////////////////////////////////////////////////////////
+
   /// text
   /// image
   /// order
   /// payment
+  /// packing
+  /// shipment
   /// tracking
   /// invoice
   /// status
   final String type;
+
+  ///////////////////////////////////////////////////////////
+  /// COMMON MESSAGE DATA
+  ///////////////////////////////////////////////////////////
 
   final String text;
 
@@ -27,9 +41,57 @@ class ChatMessageModel {
 
   final String orderId;
 
+  ///////////////////////////////////////////////////////////
+  /// ORDER
+  ///////////////////////////////////////////////////////////
+
   final Map<String, dynamic>? orderSummary;
 
+  ///////////////////////////////////////////////////////////
+  /// PAYMENT
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? paymentData;
+
+  ///////////////////////////////////////////////////////////
+  /// PACKING / PACKAGE
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? packingData;
+
+  ///////////////////////////////////////////////////////////
+  /// SHIPMENT
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? shipmentData;
+
+  ///////////////////////////////////////////////////////////
+  /// TRACKING
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? trackingData;
+
+  ///////////////////////////////////////////////////////////
+  /// INVOICE
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? invoiceData;
+
+  ///////////////////////////////////////////////////////////
+  /// STATUS
+  ///////////////////////////////////////////////////////////
+
+  final Map<String, dynamic>? statusData;
+
+  ///////////////////////////////////////////////////////////
+  /// CREATED
+  ///////////////////////////////////////////////////////////
+
   final Timestamp? createdAt;
+
+  ///////////////////////////////////////////////////////////
+  /// CONSTRUCTOR
+  ///////////////////////////////////////////////////////////
 
   const ChatMessageModel({
     required this.id,
@@ -41,64 +103,259 @@ class ChatMessageModel {
     required this.pdf,
     required this.orderId,
     required this.orderSummary,
+    required this.paymentData,
+    required this.packingData,
+    required this.shipmentData,
+    required this.trackingData,
+    required this.invoiceData,
+    required this.statusData,
     required this.createdAt,
   });
+
+  ///////////////////////////////////////////////////////////
+  /// FROM FIRESTORE
+  ///////////////////////////////////////////////////////////
 
   factory ChatMessageModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
-    final data = doc.data()!;
+    final data = doc.data() ?? {};
 
     return ChatMessageModel(
       id: doc.id,
-      senderId: data["senderId"] ?? "",
-      senderType: data["senderType"] ?? "",
-      type: data["type"] ?? "text",
-      text: data["text"] ?? "",
-      image: data["image"] ?? "",
-      pdf: data["pdf"] ?? "",
-      orderId: data["orderId"] ?? "",
+
+      senderId:
+          data["senderId"] ?? "",
+
+      senderType:
+          data["senderType"] ?? "",
+
+      type:
+          data["type"] ?? "text",
+
+      text:
+          data["text"] ?? "",
+
+      image:
+          data["image"] ?? "",
+
+      pdf:
+          data["pdf"] ?? "",
+
+      orderId:
+          data["orderId"] ?? "",
+
+      ///////////////////////////////////////////////////////
+      /// ORDER
+      ///////////////////////////////////////////////////////
+
       orderSummary:
-          data["orderSummary"] != null
-              ? Map<String, dynamic>.from(
-                  data["orderSummary"],
-                )
-              : null,
-      createdAt: data["createdAt"],
+          _mapOrNull(
+        data["orderSummary"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// PAYMENT
+      ///////////////////////////////////////////////////////
+
+      paymentData:
+          _mapOrNull(
+        data["paymentData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// PACKING
+      ///////////////////////////////////////////////////////
+
+      packingData:
+          _mapOrNull(
+        data["packingData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// SHIPMENT
+      ///////////////////////////////////////////////////////
+
+      shipmentData:
+          _mapOrNull(
+        data["shipmentData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// TRACKING
+      ///////////////////////////////////////////////////////
+
+      trackingData:
+          _mapOrNull(
+        data["trackingData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// INVOICE
+      ///////////////////////////////////////////////////////
+
+      invoiceData:
+          _mapOrNull(
+        data["invoiceData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// STATUS
+      ///////////////////////////////////////////////////////
+
+      statusData:
+          _mapOrNull(
+        data["statusData"],
+      ),
+
+      ///////////////////////////////////////////////////////
+      /// CREATED
+      ///////////////////////////////////////////////////////
+
+      createdAt:
+          data["createdAt"],
     );
   }
+
+  ///////////////////////////////////////////////////////////
+  /// TO FIRESTORE
+  ///////////////////////////////////////////////////////////
 
   Map<String, dynamic> toMap() {
     return {
       "senderId": senderId,
+
       "senderType": senderType,
+
       "type": type,
+
       "text": text,
+
       "image": image,
+
       "pdf": pdf,
+
       "orderId": orderId,
-      "orderSummary": orderSummary,
-      "createdAt": createdAt,
+
+      ///////////////////////////////////////////////////////
+      /// ORDER
+      ///////////////////////////////////////////////////////
+
+      "orderSummary":
+          orderSummary,
+
+      ///////////////////////////////////////////////////////
+      /// PAYMENT
+      ///////////////////////////////////////////////////////
+
+      "paymentData":
+          paymentData,
+
+      ///////////////////////////////////////////////////////
+      /// PACKING
+      ///////////////////////////////////////////////////////
+
+      "packingData":
+          packingData,
+
+      ///////////////////////////////////////////////////////
+      /// SHIPMENT
+      ///////////////////////////////////////////////////////
+
+      "shipmentData":
+          shipmentData,
+
+      ///////////////////////////////////////////////////////
+      /// TRACKING
+      ///////////////////////////////////////////////////////
+
+      "trackingData":
+          trackingData,
+
+      ///////////////////////////////////////////////////////
+      /// INVOICE
+      ///////////////////////////////////////////////////////
+
+      "invoiceData":
+          invoiceData,
+
+      ///////////////////////////////////////////////////////
+      /// STATUS
+      ///////////////////////////////////////////////////////
+
+      "statusData":
+          statusData,
+
+      ///////////////////////////////////////////////////////
+      /// CREATED
+      ///////////////////////////////////////////////////////
+
+      "createdAt":
+          createdAt,
     };
   }
 
-  bool get isCustomer => senderType == "customer";
+  ///////////////////////////////////////////////////////////
+  /// SENDER HELPERS
+  ///////////////////////////////////////////////////////////
 
-  bool get isAdmin => senderType == "admin";
+  bool get isCustomer =>
+      senderType == "customer";
 
-  bool get isSystem => senderType == "system";
+  bool get isAdmin =>
+      senderType == "admin";
 
-  bool get isText => type == "text";
+  bool get isSystem =>
+      senderType == "system";
 
-  bool get isImage => type == "image";
+  ///////////////////////////////////////////////////////////
+  /// TYPE HELPERS
+  ///////////////////////////////////////////////////////////
 
-  bool get isOrder => type == "order";
+  bool get isText =>
+      type == "text";
 
-  bool get isPayment => type == "payment";
+  bool get isImage =>
+      type == "image";
 
-  bool get isTracking => type == "tracking";
+  bool get isOrder =>
+      type == "order";
 
-  bool get isInvoice => type == "invoice";
+  bool get isPayment =>
+      type == "payment";
 
-  bool get isStatus => type == "status";
+  bool get isPacking =>
+      type == "packing";
+
+  bool get isShipment =>
+      type == "shipment";
+
+  bool get isTracking =>
+      type == "tracking";
+
+  bool get isInvoice =>
+      type == "invoice";
+
+  bool get isStatus =>
+      type == "status";
+
+  ///////////////////////////////////////////////////////////
+  /// PRIVATE MAP HELPER
+  ///////////////////////////////////////////////////////////
+
+  static Map<String, dynamic>? _mapOrNull(
+    dynamic value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(
+        value,
+      );
+    }
+
+    return null;
+  }
 }

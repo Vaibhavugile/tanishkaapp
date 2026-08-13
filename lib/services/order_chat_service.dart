@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/chat_message_model.dart';
 import '../models/order_chat_model.dart';
@@ -16,11 +19,20 @@ class OrderChatService {
   final FirebaseAuth _auth =
       FirebaseAuth.instance;
 
+  final FirebaseStorage _storage =
+      FirebaseStorage.instance;
+
+  /////////////////////////////////////////////////////////
+  /// CURRENT CUSTOMER UID
+  /////////////////////////////////////////////////////////
+
   String get _uid {
     final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception("User not logged in.");
+      throw Exception(
+        "User not logged in.",
+      );
     }
 
     return user.uid;
@@ -98,7 +110,12 @@ class OrderChatService {
     final messageRef =
         chatRef.collection("messages").doc();
 
-    final batch = _firestore.batch();
+    final batch =
+        _firestore.batch();
+
+    /////////////////////////////////////////////////////////
+    /// MESSAGE
+    /////////////////////////////////////////////////////////
 
     batch.set(messageRef, {
       "senderId": _uid,
@@ -118,14 +135,28 @@ class OrderChatService {
       "createdAt": now,
     });
 
+    /////////////////////////////////////////////////////////
+    /// CHAT SUMMARY
+    /////////////////////////////////////////////////////////
+
     batch.update(chatRef, {
-      "lastMessage": text.trim(),
+      "lastMessage":
+          text.trim(),
 
-      "lastMessageType": "text",
+      "lastMessageType":
+          "text",
 
-      "lastMessageTime": now,
+      "lastSenderType":
+          "customer",
 
-      "updatedAt": now,
+      "lastSenderId":
+          _uid,
+
+      "lastMessageTime":
+          now,
+
+      "updatedAt":
+          now,
 
       "unreadAdmin":
           FieldValue.increment(1),
@@ -133,6 +164,252 @@ class OrderChatService {
 
     await batch.commit();
   }
+
+  /////////////////////////////////////////////////////////
+  /// SUBMIT PAYMENT PROOF
+  ///
+  /// This updates the EXISTING payment message.
+  /////////////////////////////////////////////////////////
+
+  /////////////////////////////////////////////////////////
+/// SUBMIT PAYMENT PROOF
+///
+/// Customer uploads payment screenshot.
+/// Updates the EXISTING payment message.
+/// Does NOT mark payment as successful.
+/////////////////////////////////////////////////////////
+
+Future<void> submitPaymentProof({
+  required String orderId,
+  required String messageId,
+  required File imageFile,
+}) async {
+  /////////////////////////////////////////////////////////
+  /// CUSTOMER
+  /////////////////////////////////////////////////////////
+
+  final customerId = _uid;
+
+  /////////////////////////////////////////////////////////
+  /// VALIDATE IMAGE
+  /////////////////////////////////////////////////////////
+
+  if (!imageFile.existsSync()) {
+    throw Exception(
+      "Payment proof image not found.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final messageRef = _firestore
+      .collection("orderChats")
+      .doc(orderId)
+      .collection("messages")
+      .doc(messageId);
+
+  /////////////////////////////////////////////////////////
+  /// GET PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final messageSnapshot =
+      await messageRef.get();
+
+  if (!messageSnapshot.exists) {
+    throw Exception(
+      "Payment request not found.",
+    );
+  }
+
+  final messageData =
+      messageSnapshot.data();
+
+  if (messageData == null) {
+    throw Exception(
+      "Payment request data not found.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// VERIFY PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  if (messageData["type"] != "payment") {
+    throw Exception(
+      "This is not a payment request.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT DATA
+  /////////////////////////////////////////////////////////
+
+  final rawPaymentData =
+      messageData["paymentData"];
+
+  final Map<String, dynamic>
+      paymentData =
+      rawPaymentData is Map
+          ? Map<String, dynamic>.from(
+              rawPaymentData,
+            )
+          : {};
+
+  /////////////////////////////////////////////////////////
+  /// CURRENT STATUS
+  /////////////////////////////////////////////////////////
+
+  final currentStatus =
+      (paymentData["status"] ??
+              "pending")
+          .toString()
+          .toLowerCase();
+
+  /////////////////////////////////////////////////////////
+  /// ALREADY PAID
+  /////////////////////////////////////////////////////////
+
+  if (currentStatus == "successful" ||
+      currentStatus == "success" ||
+      currentStatus == "paid") {
+    throw Exception(
+      "This payment is already successful.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// DON'T ALLOW DUPLICATE VERIFICATION REQUEST
+  /////////////////////////////////////////////////////////
+
+  if (currentStatus ==
+      "proof_submitted") {
+    throw Exception(
+      "Payment proof has already been submitted.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// STORAGE PATH
+  /////////////////////////////////////////////////////////
+
+  final storageRef = _storage
+      .ref()
+      .child(
+        "paymentProofs"
+        "/$orderId"
+        "/$messageId"
+        "/payment_proof.jpg",
+      );
+
+  /////////////////////////////////////////////////////////
+  /// UPLOAD
+  /////////////////////////////////////////////////////////
+
+  await storageRef.putFile(
+    imageFile,
+    SettableMetadata(
+      contentType: "image/jpeg",
+      customMetadata: {
+        "orderId": orderId,
+        "messageId": messageId,
+        "customerId": customerId,
+        "type": "payment_proof",
+      },
+    ),
+  );
+
+  /////////////////////////////////////////////////////////
+  /// GET DOWNLOAD URL
+  /////////////////////////////////////////////////////////
+
+  final proofImageUrl =
+      await storageRef.getDownloadURL();
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE PAYMENT DATA
+  /////////////////////////////////////////////////////////
+
+  paymentData[
+          "status"] =
+      "proof_submitted";
+
+  paymentData[
+          "paymentProofImage"] =
+      proofImageUrl;
+
+  paymentData[
+          "paymentProofUploadedBy"] =
+      customerId;
+
+  paymentData[
+          "paymentProofUploadedAt"] =
+      FieldValue.serverTimestamp();
+
+  /////////////////////////////////////////////////////////
+  /// CHAT
+  /////////////////////////////////////////////////////////
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  /////////////////////////////////////////////////////////
+  /// BATCH
+  /////////////////////////////////////////////////////////
+
+  final batch =
+      _firestore.batch();
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    messageRef,
+    {
+      "paymentData":
+          paymentData,
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE CHAT SUMMARY
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    chatRef,
+    {
+      "lastMessage":
+          "Payment proof submitted",
+
+      "lastMessageType":
+          "payment",
+
+      "lastSenderType":
+          "customer",
+
+      "lastSenderId":
+          customerId,
+
+      "lastMessageTime":
+          FieldValue.serverTimestamp(),
+
+      "updatedAt":
+          FieldValue.serverTimestamp(),
+
+      "unreadAdmin":
+          FieldValue.increment(1),
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// COMMIT
+  /////////////////////////////////////////////////////////
+
+  await batch.commit();
+}
 
   /////////////////////////////////////////////////////////
   /// MARK AS READ

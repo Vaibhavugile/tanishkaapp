@@ -479,16 +479,22 @@ class AdminChatService {
 /// MARK PAYMENT SUCCESSFUL
 ///////////////////////////////////////////////////////////
 
-Future<void> markPaymentSuccessful({
+/////////////////////////////////////////////////////////
+/// APPROVE PAYMENT
+///
+/// Admin can approve ONLY after customer
+/// has uploaded payment proof.
+/////////////////////////////////////////////////////////
+
+Future<void> approvePayment({
   required String orderId,
-  required double amount,
-  required String paymentMethodId,
-  required String paymentMethodName,
+  required String messageId,
 }) async {
   final adminId = _adminId;
 
-  final now =
-      FieldValue.serverTimestamp();
+  /////////////////////////////////////////////////////////
+  /// REFERENCES
+  /////////////////////////////////////////////////////////
 
   final orderRef = _firestore
       .collection("orders")
@@ -500,67 +506,149 @@ Future<void> markPaymentSuccessful({
 
   final messageRef = chatRef
       .collection("messages")
-      .doc();
-
-  final batch = _firestore.batch();
+      .doc(messageId);
 
   /////////////////////////////////////////////////////////
-  /// 1. UPDATE ORDER PAYMENT STATUS
+  /// GET PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final messageSnapshot =
+      await messageRef.get();
+
+  if (!messageSnapshot.exists) {
+    throw Exception(
+      "Payment request not found.",
+    );
+  }
+
+  final data =
+      messageSnapshot.data();
+
+  if (data == null) {
+    throw Exception(
+      "Payment request data not found.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// VERIFY MESSAGE TYPE
+  /////////////////////////////////////////////////////////
+
+  if (data["type"] != "payment") {
+    throw Exception(
+      "This is not a payment message.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT DATA
+  /////////////////////////////////////////////////////////
+
+  final rawPaymentData =
+      data["paymentData"];
+
+  final Map<String, dynamic>
+      paymentData =
+      rawPaymentData is Map
+          ? Map<String, dynamic>.from(
+              rawPaymentData,
+            )
+          : {};
+
+  /////////////////////////////////////////////////////////
+  /// CURRENT STATUS
+  /////////////////////////////////////////////////////////
+
+  final currentStatus =
+      (paymentData["status"] ??
+              "pending")
+          .toString()
+          .toLowerCase();
+
+  /////////////////////////////////////////////////////////
+  /// ALREADY SUCCESSFUL
+  /////////////////////////////////////////////////////////
+
+  if (currentStatus == "successful" ||
+      currentStatus == "success" ||
+      currentStatus == "paid") {
+    throw Exception(
+      "This payment is already successful.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT PROOF REQUIRED
+  /////////////////////////////////////////////////////////
+
+  final proofImage =
+      (paymentData[
+                  "paymentProofImage"] ??
+              "")
+          .toString()
+          .trim();
+
+  if (proofImage.isEmpty) {
+    throw Exception(
+      "Customer payment proof has not been uploaded.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE PAYMENT DATA
+  /////////////////////////////////////////////////////////
+
+  paymentData["status"] =
+      "successful";
+
+  paymentData["verifiedBy"] =
+      adminId;
+
+  paymentData["verifiedAt"] =
+      FieldValue.serverTimestamp();
+
+  /////////////////////////////////////////////////////////
+  /// BATCH
+  /////////////////////////////////////////////////////////
+
+  final batch =
+      _firestore.batch();
+
+  /////////////////////////////////////////////////////////
+  /// 1. UPDATE ORIGINAL PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    messageRef,
+    {
+      "paymentData":
+          paymentData,
+
+      "text":
+          "Payment verified successfully",
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// 2. UPDATE ORDER
   /////////////////////////////////////////////////////////
 
   batch.update(
     orderRef,
     {
-      "paymentStatus": "Paid",
-      "paymentVerifiedBy": adminId,
-      "paymentVerifiedAt": now,
+      "paymentStatus":
+          "Paid",
+
+      "paymentVerifiedBy":
+          adminId,
+
+      "paymentVerifiedAt":
+          FieldValue.serverTimestamp(),
     },
   );
 
   /////////////////////////////////////////////////////////
-  /// 2. CREATE PAYMENT CHAT MESSAGE
-  /////////////////////////////////////////////////////////
-
-  batch.set(
-    messageRef,
-    {
-      "senderId": adminId,
-
-      "senderType": "admin",
-
-      "type": "payment",
-
-      "text":
-          "Payment verified successfully",
-
-      "image": "",
-
-      "pdf": "",
-
-      "orderId": orderId,
-
-      "paymentData": {
-        "status": "Paid",
-
-        "amount": amount,
-
-        "paymentMethodId":
-            paymentMethodId,
-
-        "paymentMethodName":
-            paymentMethodName,
-
-        "verifiedBy": adminId,
-
-        "verifiedAt": now,
-      },
-
-      "createdAt": now,
-    },
-  );
-
-  /////////////////////////////////////////////////////////
-  /// 3. UPDATE ORDER CHAT SUMMARY
+  /// 3. UPDATE CHAT SUMMARY
   /////////////////////////////////////////////////////////
 
   batch.update(
@@ -579,20 +667,170 @@ Future<void> markPaymentSuccessful({
           adminId,
 
       "lastMessageTime":
-          now,
+          FieldValue.serverTimestamp(),
 
       "updatedAt":
-          now,
+          FieldValue.serverTimestamp(),
 
       "unreadCustomer":
           FieldValue.increment(1),
 
-      "unreadAdmin": 0,
+      "unreadAdmin":
+          0,
     },
   );
 
   /////////////////////////////////////////////////////////
-  /// 4. COMMIT EVERYTHING TOGETHER
+  /// COMMIT
+  /////////////////////////////////////////////////////////
+
+  await batch.commit();
+}
+/////////////////////////////////////////////////////////
+/// REJECT PAYMENT
+///
+/// Customer must upload a new proof.
+/////////////////////////////////////////////////////////
+
+Future<void> rejectPayment({
+  required String orderId,
+  required String messageId,
+  String reason = "",
+}) async {
+  final adminId = _adminId;
+
+  /////////////////////////////////////////////////////////
+  /// REFERENCES
+  /////////////////////////////////////////////////////////
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final messageRef = chatRef
+      .collection("messages")
+      .doc(messageId);
+
+  /////////////////////////////////////////////////////////
+  /// GET PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final messageSnapshot =
+      await messageRef.get();
+
+  if (!messageSnapshot.exists) {
+    throw Exception(
+      "Payment request not found.",
+    );
+  }
+
+  final data =
+      messageSnapshot.data();
+
+  if (data == null) {
+    throw Exception(
+      "Payment request data not found.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// VERIFY MESSAGE TYPE
+  /////////////////////////////////////////////////////////
+
+  if (data["type"] != "payment") {
+    throw Exception(
+      "This is not a payment message.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT DATA
+  /////////////////////////////////////////////////////////
+
+  final rawPaymentData =
+      data["paymentData"];
+
+  final Map<String, dynamic>
+      paymentData =
+      rawPaymentData is Map
+          ? Map<String, dynamic>.from(
+              rawPaymentData,
+            )
+          : {};
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE STATUS
+  /////////////////////////////////////////////////////////
+
+  paymentData["status"] =
+      "rejected";
+
+  paymentData["rejectedBy"] =
+      adminId;
+
+  paymentData["rejectedAt"] =
+      FieldValue.serverTimestamp();
+
+  paymentData["rejectionReason"] =
+      reason.trim();
+
+  /////////////////////////////////////////////////////////
+  /// BATCH
+  /////////////////////////////////////////////////////////
+
+  final batch =
+      _firestore.batch();
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE ORIGINAL PAYMENT MESSAGE
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    messageRef,
+    {
+      "paymentData":
+          paymentData,
+
+      "text":
+          "Payment proof rejected",
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE CHAT
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    chatRef,
+    {
+      "lastMessage":
+          "Payment proof rejected",
+
+      "lastMessageType":
+          "payment",
+
+      "lastSenderType":
+          "admin",
+
+      "lastSenderId":
+          adminId,
+
+      "lastMessageTime":
+          FieldValue.serverTimestamp(),
+
+      "updatedAt":
+          FieldValue.serverTimestamp(),
+
+      "unreadCustomer":
+          FieldValue.increment(1),
+
+      "unreadAdmin":
+          0,
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// COMMIT
   /////////////////////////////////////////////////////////
 
   await batch.commit();

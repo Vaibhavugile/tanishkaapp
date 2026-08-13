@@ -2446,15 +2446,11 @@ Future<void> _confirmPayment(
   }
 
   try {
-  await AdminChatService.instance
-      .markPaymentSuccessful(
-    orderId: widget.orderId,
-    amount: amount,
-    paymentMethodId:
-        payment["paymentMethodId"]?.toString() ?? "",
-    paymentMethodName:
-        payment["paymentMethodName"]?.toString() ?? "",
-  );
+  
+     await AdminChatService.instance.approvePayment(
+  orderId: widget.orderId,
+  messageId: message.id,
+);
 
   if (!mounted) return;
 

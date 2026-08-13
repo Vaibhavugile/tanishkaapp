@@ -25,83 +25,7 @@ bool _sendingPaymentRequest = false;
   ///////////////////////////////////////////////////////////
   /// BUILD
   ///////////////////////////////////////////////////////////
-Future<void> _confirmPayment({
-  required double amount,
-  required PaymentMethodModel paymentMethod,
-}) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text(
-          "Confirm Payment",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        content: Text(
-          "Confirm that ₹${amount.toStringAsFixed(2)} "
-          "has been received successfully?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context, false);
-            },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  const Color(0xffE91E63),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text(
-              "Confirm",
-            ),
-          ),
-        ],
-      );
-    },
-  );
 
-  if (confirmed != true) {
-    return;
-  }
-
-  try {
-    await AdminChatService.instance
-        .markPaymentSuccessful(
-      orderId: widget.orderId,
-      amount: amount,
-      paymentMethodId: paymentMethod.id,
-      paymentMethodName: paymentMethod.name,
-    );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Payment marked as successful",
-        ),
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Unable to verify payment: $e",
-        ),
-      ),
-    );
-  }
-}
 ///////////////////////////////////////////////////////////
 /// SEND PAYMENT REQUEST TO CUSTOMER
 ///////////////////////////////////////////////////////////
@@ -352,6 +276,13 @@ Future<void> _sendPaymentRequest({
                       const SizedBox(
                         height: 24,
                       ),
+                      _buildCustomerPaymentProof(
+  paymentStatus,
+),
+
+const SizedBox(
+  height: 24,
+),
 
                       //////////////////////////////////////////////////
                       /// PAYMENT METHODS
@@ -426,10 +357,10 @@ const SizedBox(height: 12),
 /// MARK SUCCESSFUL
 ///////////////////////////////////////////////////////////
 
-_buildSuccessButton(
-  paymentStatus,
-  totalAmount,
-),
+// _buildSuccessButton(
+//   paymentStatus,
+//   totalAmount,
+// ),
                     ],
                   ),
                 ),
@@ -953,74 +884,610 @@ _buildSuccessButton(
   ///////////////////////////////////////////////////////////
   /// SUCCESS BUTTON
   ///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// CUSTOMER PAYMENT PROOF
+///////////////////////////////////////////////////////////
 
-  Widget _buildSuccessButton(
+Widget _buildCustomerPaymentProof(
   String paymentStatus,
-  double amount,
 ) {
-    final paid =
-        paymentStatus.toLowerCase() ==
-                "paid" ||
-            paymentStatus.toLowerCase() ==
-                "successful";
+  return StreamBuilder<
+      QuerySnapshot<Map<String, dynamic>>>(
+    stream: FirebaseFirestore.instance
+        .collection("orderChats")
+        .doc(widget.orderId)
+        .collection("messages")
+        .where("type", isEqualTo: "payment")
+        .orderBy(
+          "createdAt",
+          descending: true,
+        )
+        .limit(1)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState ==
+          ConnectionState.waiting) {
+        return const SizedBox.shrink();
+      }
 
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
-       onPressed: paid
-    ? null
-    : () {
-        if (_selectedMethod == null) {
-          return;
-        }
+      if (snapshot.hasError ||
+          !snapshot.hasData ||
+          snapshot.data!.docs.isEmpty) {
+        return const SizedBox.shrink();
+      }
 
-        _confirmPayment(
-          amount: amount,
-          paymentMethod: _selectedMethod!,
-        );
-      },
+      final doc =
+          snapshot.data!.docs.first;
 
-        icon: Icon(
-          paid
-              ? Icons.check_circle_outline
-              : Icons.verified_outlined,
+      final data = doc.data();
+
+      final rawPaymentData =
+          data["paymentData"];
+
+      final Map<String, dynamic>
+          paymentData =
+          rawPaymentData is Map
+              ? Map<String, dynamic>.from(
+                  rawPaymentData,
+                )
+              : {};
+
+      final proofImage =
+          (paymentData[
+                      "paymentProofImage"] ??
+                  "")
+              .toString()
+              .trim();
+
+      final status =
+          (paymentData["status"] ??
+                  "pending")
+              .toString()
+              .toLowerCase();
+
+      /////////////////////////////////////////////////////////
+      /// NO PROOF
+      /////////////////////////////////////////////////////////
+
+      if (proofImage.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      /////////////////////////////////////////////////////////
+      /// PROOF AVAILABLE
+      /////////////////////////////////////////////////////////
+
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(
+          top: 20,
         ),
-
-        label: Text(
-          paid
-              ? "Payment Successful"
-              : "Mark Payment Successful",
-          style: const TextStyle(
-            fontWeight:
-                FontWeight.w800,
-          ),
-        ),
-
-        style:
-            ElevatedButton.styleFrom(
-          backgroundColor:
-              const Color(0xffE91E63),
-          foregroundColor:
-              Colors.white,
-          disabledBackgroundColor:
-              Colors.green
-                  .withOpacity(.15),
-          disabledForegroundColor:
-              Colors.green,
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(
-              18,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+              BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(
+              0xffEDE3E8,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  Colors.black.withOpacity(.04),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
+            ),
+          ],
         ),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            //////////////////////////////////////////////////
+            /// HEADER
+            //////////////////////////////////////////////////
+
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xffE8F5E9,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons
+                        .receipt_long_rounded,
+                    color: Colors.green,
+                    size: 22,
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Customer Payment Proof",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight:
+                              FontWeight.w900,
+                          color:
+                              Color(0xff241B2F),
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        "Screenshot uploaded by customer",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _proofStatusChip(status),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            //////////////////////////////////////////////////
+            /// PROOF IMAGE
+            //////////////////////////////////////////////////
+
+            GestureDetector(
+              onTap: () {
+                _showPaymentProof(
+                  proofImage,
+                );
+              },
+              child: ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(18),
+                child: Container(
+                  width: double.infinity,
+                  constraints:
+                      const BoxConstraints(
+                    maxHeight: 420,
+                  ),
+                  color:
+                      const Color(0xffF7F4F6),
+                  child: Image.network(
+                    proofImage,
+                    fit: BoxFit.contain,
+                    loadingBuilder:
+                        (
+                      context,
+                      child,
+                      progress,
+                    ) {
+                      if (progress == null) {
+                        return child;
+                      }
+
+                      return const SizedBox(
+                        height: 220,
+                        child: Center(
+                          child:
+                              CircularProgressIndicator(
+                            color:
+                                Color(0xffE91E63),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder:
+                        (
+                      context,
+                      error,
+                      stackTrace,
+                    ) {
+                      return const SizedBox(
+                        height: 220,
+                        child: Center(
+                          child: Icon(
+                            Icons
+                                .broken_image_outlined,
+                            size: 45,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            const Center(
+              child: Text(
+                "Tap image to view full size",
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+
+            //////////////////////////////////////////////////
+            /// PAYMENT DETAILS
+            //////////////////////////////////////////////////
+
+            const SizedBox(height: 16),
+
+            _paymentInfoRow(
+              Icons.currency_rupee_rounded,
+              "Amount",
+              "₹${_toDouble(
+                paymentData["amount"],
+              ).toStringAsFixed(2)}",
+            ),
+
+            _paymentInfoRow(
+              Icons.qr_code_rounded,
+              "Method",
+              (paymentData[
+                          "paymentMethodName"] ??
+                      "Payment")
+                  .toString(),
+            ),
+
+            //////////////////////////////////////////////////
+            /// APPROVE / REJECT
+            //////////////////////////////////////////////////
+
+            if (status ==
+                "proof_submitted") ...[
+              const SizedBox(height: 18),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _rejectCustomerPayment(
+                          doc.id,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                      ),
+                      label: const Text(
+                        "Reject",
+                      ),
+                      style:
+                          OutlinedButton.styleFrom(
+                        foregroundColor:
+                            const Color(
+                          0xffC62828,
+                        ),
+                        side: const BorderSide(
+                          color: Color(
+                            0xffE57373,
+                          ),
+                        ),
+                        minimumSize:
+                            const Size(
+                          0,
+                          52,
+                        ),
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _approveCustomerPayment(
+                          doc.id,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons
+                            .check_circle_rounded,
+                      ),
+                      label: const Text(
+                        "Approve",
+                      ),
+                      style:
+                          ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Colors.green,
+                        foregroundColor:
+                            Colors.white,
+                        minimumSize:
+                            const Size(
+                          0,
+                          52,
+                        ),
+                        elevation: 0,
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    },
+  );
+}
+Widget _proofStatusChip(
+  String status,
+) {
+  Color color;
+  String label;
+
+  switch (status) {
+    case "successful":
+    case "success":
+    case "paid":
+      color = Colors.green;
+      label = "VERIFIED";
+      break;
+
+    case "rejected":
+      color = Colors.red;
+      label = "REJECTED";
+      break;
+
+    case "proof_submitted":
+      color = Colors.orange;
+      label = "REVIEW";
+      break;
+
+    default:
+      color = Colors.grey;
+      label = "PENDING";
+  }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: 10,
+      vertical: 6,
+    ),
+    decoration: BoxDecoration(
+      color: color.withOpacity(.10),
+      borderRadius:
+          BorderRadius.circular(20),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+  );
+}
+void _showPaymentProof(
+  String imageUrl,
+) {
+  showDialog(
+    context: context,
+    barrierColor:
+        Colors.black.withOpacity(.88),
+    builder: (_) {
+      return Dialog(
+        backgroundColor:
+            Colors.transparent,
+        insetPadding:
+            const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            Center(
+              child: ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(20),
+                child: InteractiveViewer(
+                  minScale: .7,
+                  maxScale: 4,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color:
+                    Colors.black.withOpacity(.6),
+                shape:
+                    const CircleBorder(),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+Future<void> _approveCustomerPayment(
+  String messageId,
+) async {
+  try {
+    await AdminChatService.instance
+        .approvePayment(
+      orderId: widget.orderId,
+      messageId: messageId,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Payment approved successfully",
+        ),
+        behavior:
+            SnackBarBehavior.floating,
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          "Unable to approve payment: $e",
+        ),
+        behavior:
+            SnackBarBehavior.floating,
       ),
     );
   }
+}
+Future<void> _rejectCustomerPayment(
+  String messageId,
+) async {
+  final controller =
+      TextEditingController();
 
+  final reason =
+      await showDialog<String>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(
+          "Reject Payment Proof",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration:
+              const InputDecoration(
+            hintText:
+                "Reason for rejection...",
+            border:
+                OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child:
+                const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                controller.text.trim(),
+              );
+            },
+            style:
+                ElevatedButton.styleFrom(
+              backgroundColor:
+                  const Color(
+                0xffC62828,
+              ),
+              foregroundColor:
+                  Colors.white,
+            ),
+            child:
+                const Text("Reject"),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (reason == null) {
+    return;
+  }
+
+  try {
+    await AdminChatService.instance
+        .rejectPayment(
+      orderId: widget.orderId,
+      messageId: messageId,
+      reason: reason,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Payment proof rejected",
+        ),
+        behavior:
+            SnackBarBehavior.floating,
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          "Unable to reject payment: $e",
+        ),
+        behavior:
+            SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+  
   ///////////////////////////////////////////////////////////
   /// FULL SCREEN SCANNER
   ///////////////////////////////////////////////////////////
@@ -1297,4 +1764,59 @@ Widget _buildSendPaymentButton(
         ) ??
         0;
   }
+  Widget _paymentInfoRow(
+  IconData icon,
+  String title,
+  String value,
+) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(
+      vertical: 5,
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xffFFF1F6),
+            borderRadius:
+                BorderRadius.circular(11),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xffE91E63),
+            size: 16,
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xff8A7D87),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xff241B2F),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

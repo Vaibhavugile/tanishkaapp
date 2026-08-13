@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../models/order_chat_model.dart';
 import '../../../models/chat_message_model.dart';
@@ -22,6 +27,12 @@ class _OrderChatScreenState
   final TextEditingController _controller =
       TextEditingController();
 
+  final ImagePicker _picker =
+      ImagePicker();
+
+  bool _sending = false;
+  bool _uploadingProof = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,9 +43,328 @@ class _OrderChatScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // =========================================================
+  // SEND NORMAL MESSAGE
+  // =========================================================
+
+  Future<void> _sendMessage() async {
+    final text =
+        _controller.text.trim();
+
+    if (text.isEmpty || _sending) {
+      return;
+    }
+
+    setState(() {
+      _sending = true;
+    });
+
+    try {
+      await OrderChatService.instance.sendMessage(
+        orderId: widget.chat.orderId,
+        text: text,
+      );
+
+      _controller.clear();
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(
+        "Unable to send message.",
+      );
+
+      debugPrint(
+        "Send message error: $e",
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sending = false;
+        });
+      }
+    }
+  }
+
+  // =========================================================
+  // PICK PAYMENT SCREENSHOT
+  // =========================================================
+
+  Future<void> _pickPaymentProof(
+    ChatMessageModel message,
+  ) async {
+    if (_uploadingProof) {
+      return;
+    }
+
+    final source =
+        await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              24,
+            ),
+            child: Column(
+              mainAxisSize:
+                  MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius:
+                        BorderRadius.circular(20),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                const Text(
+                  "Upload Payment Proof",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xff44212E),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  "Choose how you want to upload your payment screenshot.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _sourceButton(
+                        icon:
+                            Icons.photo_library_rounded,
+                        title: "Gallery",
+                        source:
+                            ImageSource.gallery,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: _sourceButton(
+                        icon:
+                            Icons.camera_alt_rounded,
+                        title: "Camera",
+                        source:
+                            ImageSource.camera,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null) {
+      return;
+    }
+
+    try {
+      final XFile? file =
+          await _picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+
+      if (file == null) {
+        return;
+      }
+
+      if (!mounted) return;
+
+      await _submitPaymentProof(
+        message,
+        file,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      _showError(
+        "Unable to select screenshot.",
+      );
+
+      debugPrint(
+        "Payment proof picker error: $e",
+      );
+    }
+  }
+
+  // =========================================================
+  // SOURCE BUTTON
+  // =========================================================
+
+  Widget _sourceButton({
+    required IconData icon,
+    required String title,
+    required ImageSource source,
+  }) {
+    return InkWell(
+      borderRadius:
+          BorderRadius.circular(18),
+      onTap: () {
+        Navigator.pop(
+          context,
+          source,
+        );
+      },
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(
+          vertical: 18,
+        ),
+        decoration: BoxDecoration(
+          color:
+              const Color(0xffFFF5F9),
+          borderRadius:
+              BorderRadius.circular(18),
+          border: Border.all(
+            color:
+                const Color(0xffF3DCE5),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration:
+                  const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient:
+                    LinearGradient(
+                  colors: [
+                    Color(0xffFF73AF),
+                    Color(0xffE91E63),
+                  ],
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 23,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight:
+                    FontWeight.w800,
+                color:
+                    Color(0xff44212E),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // UPLOAD PAYMENT PROOF
+  // =========================================================
+
+ Future<void> _submitPaymentProof(
+  ChatMessageModel message,
+  XFile file,
+) async {
+  if (_uploadingProof) {
+    return;
+  }
+
+  setState(() {
+    _uploadingProof = true;
+  });
+
+  try {
+    final messageId = message.id;
+
+    if (messageId.isEmpty) {
+      throw Exception(
+        "Payment message ID is missing.",
+      );
+    }
+
+    await OrderChatService.instance
+        .submitPaymentProof(
+      orderId: widget.chat.orderId,
+      messageId: messageId,
+      imageFile: File(file.path),
+    );
+
+    if (!mounted) return;
+
+    _showSuccess(
+      "Payment proof submitted successfully.",
+    );
+  } catch (e) {
+    debugPrint(
+      "Payment proof error: $e",
+    );
+
+    if (!mounted) return;
+
+    _showError(
+      "Unable to submit payment proof.",
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _uploadingProof = false;
+      });
+    }
+  }
+}
+
+  // =========================================================
+  // BUILD
+  // =========================================================
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
-      backgroundColor: const Color(0xffFFF8FB),
+      backgroundColor:
+          const Color(0xffFFF8FB),
 
       appBar: AppBar(
         elevation: 0,
@@ -54,13 +384,14 @@ class _OrderChatScreenState
 
         title: Row(
           children: [
-
             Container(
               width: 42,
               height: 42,
-              decoration: const BoxDecoration(
+              decoration:
+                  const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
+                gradient:
+                    LinearGradient(
                   colors: [
                     Color(0xffFFCCE1),
                     Color(0xffE91E63),
@@ -80,20 +411,21 @@ class _OrderChatScreenState
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
                 children: [
-
                   Text(
                     widget.chat.orderId,
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
 
                   Text(
                     widget.chat.orderStatus,
                     style: TextStyle(
-                      color: Colors.green.shade700,
+                      color:
+                          Colors.green.shade700,
                       fontSize: 12,
                     ),
                   ),
@@ -106,23 +438,28 @@ class _OrderChatScreenState
 
       body: Column(
         children: [
-
-          //////////////////////////////////////////////////////
-          /// MESSAGES
-          //////////////////////////////////////////////////////
+          // ===================================================
+          // MESSAGES
+          // ===================================================
 
           Expanded(
             child: StreamBuilder<
                 List<ChatMessageModel>>(
-              stream: OrderChatService.instance
-                  .messagesStream(
+              stream:
+                  OrderChatService.instance
+                      .messagesStream(
                 widget.chat.orderId,
               ),
-              builder: (context, snapshot) {
+
+              builder:
+                  (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(
                     child:
-                        CircularProgressIndicator(),
+                        CircularProgressIndicator(
+                      color:
+                          Color(0xffE91E63),
+                    ),
                   );
                 }
 
@@ -150,36 +487,46 @@ class _OrderChatScreenState
             ),
           ),
 
-          //////////////////////////////////////////////////////
-          /// INPUT
-          //////////////////////////////////////////////////////
+          // ===================================================
+          // INPUT
+          // ===================================================
 
           SafeArea(
             child: Container(
               padding:
                   const EdgeInsets.all(12),
 
-              decoration: const BoxDecoration(
+              decoration:
+                  const BoxDecoration(
                 color: Colors.white,
               ),
 
               child: Row(
                 children: [
-
                   Expanded(
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(
+                      decoration:
+                          BoxDecoration(
+                        color:
+                            const Color(
                           0xffF7F4F6,
                         ),
                         borderRadius:
                             BorderRadius.circular(
-                                30),
+                          30,
+                        ),
                       ),
 
                       child: TextField(
                         controller:
                             _controller,
+
+                        textInputAction:
+                            TextInputAction.send,
+
+                        onSubmitted: (_) {
+                          _sendMessage();
+                        },
 
                         decoration:
                             const InputDecoration(
@@ -202,21 +549,14 @@ class _OrderChatScreenState
                   InkWell(
                     borderRadius:
                         BorderRadius.circular(
-                            100),
-                    onTap: () async {
-                      final text =
-                          _controller.text;
+                      100,
+                    ),
 
-                      _controller.clear();
+                    onTap:
+                        _sending
+                            ? null
+                            : _sendMessage,
 
-                      await OrderChatService
-                          .instance
-                          .sendMessage(
-                        orderId:
-                            widget.chat.orderId,
-                        text: text,
-                      );
-                    },
                     child: Container(
                       width: 54,
                       height: 54,
@@ -231,10 +571,25 @@ class _OrderChatScreenState
                           ],
                         ),
                       ),
-                      child: const Icon(
-                        Icons.send,
-                        color: Colors.white,
-                      ),
+
+                      child: _sending
+                          ? const Padding(
+                              padding:
+                                  EdgeInsets.all(
+                                16,
+                              ),
+                              child:
+                                  CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color:
+                                    Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send,
+                              color:
+                                  Colors.white,
+                            ),
                     ),
                   ),
                 ],
@@ -246,51 +601,731 @@ class _OrderChatScreenState
     );
   }
 
+  // =========================================================
+  // MESSAGE ROUTER
+  // =========================================================
+
   Widget buildMessageBubble(
-  ChatMessageModel message,
-) {
-  final isMine = message.isCustomer;
+    ChatMessageModel message,
+  ) {
+    // -------------------------------------------------------
+    // ORDER
+    // -------------------------------------------------------
 
-  //////////////////////////////////////////////////////
-  /// ORDER CARD
-  //////////////////////////////////////////////////////
+    if (message.isOrder) {
+      return _buildOrderCard(
+        message,
+      );
+    }
 
-  if (message.isOrder) {
-    final summary = message.orderSummary ?? {};
+    // -------------------------------------------------------
+    // PAYMENT
+    // -------------------------------------------------------
+
+    if (message.isPayment) {
+      return _buildPaymentCard(
+        message,
+      );
+    }
+
+    // -------------------------------------------------------
+    // NORMAL MESSAGE
+    // -------------------------------------------------------
+
+    final isMine =
+        message.isCustomer;
+
+    return Align(
+      alignment: isMine
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+
+      child: Container(
+        margin:
+            const EdgeInsets.only(
+          bottom: 14,
+        ),
+
+        padding:
+            const EdgeInsets.all(14),
+
+        constraints:
+            const BoxConstraints(
+          maxWidth: 290,
+        ),
+
+        decoration:
+            BoxDecoration(
+          color: isMine
+              ? const Color(
+                  0xffE91E63,
+                )
+              : Colors.white,
+
+          borderRadius:
+              BorderRadius.circular(22),
+
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black
+                  .withOpacity(.05),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+
+        child: Text(
+          message.text,
+
+          style: TextStyle(
+            color: isMine
+                ? Colors.white
+                : Colors.black87,
+            height: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // PAYMENT CARD
+  // =========================================================
+
+  Widget _buildPaymentCard(
+    ChatMessageModel message,
+  ) {
+    final payment =
+        message.paymentData ?? {};
+
+    final amount =
+        _toDouble(
+      payment["amount"],
+    );
+
+    final method =
+        (payment["paymentMethod"] ??
+                payment["paymentMethodName"] ??
+                payment["method"] ??
+                "Payment")
+            .toString();
+
+    final qr =
+        (payment["qrImage"] ??
+                payment["image"] ??
+                payment["scannerImage"] ??
+                "")
+            .toString();
+
+    final proof =
+        (payment["paymentProofImage"] ??
+                payment["screenshotUrl"] ??
+                payment["screenshot"] ??
+                "")
+            .toString();
+
+    final status =
+        (payment["status"] ??
+                "pending")
+            .toString()
+            .toLowerCase();
+
+    final successful =
+        status == "successful" ||
+        status == "success" ||
+        status == "paid";
+
+    final proofSubmitted =
+        status == "proof_submitted";
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
-      decoration: BoxDecoration(
+      width: double.infinity,
+
+      margin:
+          const EdgeInsets.only(
+        bottom: 18,
+      ),
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+
+        borderRadius:
+            BorderRadius.circular(26),
+
+        border: Border.all(
+          color:
+              const Color(0xffF1E2E8),
+        ),
+
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black
+                .withOpacity(.055),
+            blurRadius: 22,
+            offset:
+                const Offset(0, 9),
           ),
         ],
       ),
+
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding:
+            const EdgeInsets.all(18),
+
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
-          children: [
 
-            //////////////////////////////////////////////////////
-            /// HEADER
-            //////////////////////////////////////////////////////
+          children: [
+            // =================================================
+            // HEADER
+            // =================================================
 
             Row(
               children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration:
+                      const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient:
+                        LinearGradient(
+                      colors: [
+                        Color(0xffFFCCE1),
+                        Color(0xffE91E63),
+                      ],
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.payments_rounded,
+                    color: Colors.white,
+                  ),
+                ),
 
+                const SizedBox(width: 12),
+
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Payment Request",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight:
+                              FontWeight.w900,
+                          color:
+                              Color(0xff44212E),
+                        ),
+                      ),
+
+                      SizedBox(height: 3),
+
+                      Text(
+                        "Payment verification",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color:
+                              Color(0xff9B7B85),
+                          fontWeight:
+                              FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // =================================================
+            // AMOUNT
+            // =================================================
+
+            Container(
+              width: double.infinity,
+
+              padding:
+                  const EdgeInsets.all(18),
+
+              decoration:
+                  BoxDecoration(
+                color:
+                    const Color(0xffFFF6FA),
+                borderRadius:
+                    BorderRadius.circular(18),
+              ),
+
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: [
+                  const Text(
+                    "AMOUNT TO PAY",
+                    style: TextStyle(
+                      color:
+                          Color(0xff9B7B85),
+                      fontSize: 10,
+                      fontWeight:
+                          FontWeight.w800,
+                      letterSpacing: .5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  Text(
+                    "₹${amount.toStringAsFixed(0)}",
+                    style:
+                        const TextStyle(
+                      color:
+                          Color(0xffE91E63),
+                      fontSize: 30,
+                      fontWeight:
+                          FontWeight.w900,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 16,
+                        color:
+                            Color(0xff9B7B85),
+                      ),
+
+                      const SizedBox(width: 6),
+
+                      Text(
+                        method,
+                        style:
+                            const TextStyle(
+                          color:
+                              Color(0xff44212E),
+                          fontWeight:
+                              FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // =================================================
+            // QR
+            // =================================================
+
+            if (qr.isNotEmpty &&
+                !successful) ...[
+              const SizedBox(height: 20),
+
+              const Text(
+                "Scan to Pay",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight:
+                      FontWeight.w900,
+                  color:
+                      Color(0xff44212E),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Center(
+                child: Container(
+                  width: 220,
+                  height: 220,
+
+                  padding:
+                      const EdgeInsets.all(
+                    10,
+                  ),
+
+                  decoration:
+                      BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        BorderRadius.circular(
+                      20,
+                    ),
+                    border: Border.all(
+                      color:
+                          const Color(
+                        0xffF0E0E7,
+                      ),
+                    ),
+                  ),
+
+                  child: ClipRRect(
+                    borderRadius:
+                        BorderRadius.circular(
+                      14,
+                    ),
+                    child: Image.network(
+                      qr,
+                      fit: BoxFit.contain,
+                      errorBuilder:
+                          (_, __, ___) {
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color:
+                                Colors.grey,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            // =================================================
+            // SUCCESS
+            // =================================================
+
+            if (successful) ...[
+              const SizedBox(height: 18),
+
+              _statusBox(
+                icon:
+                    Icons.check_circle_rounded,
+                title:
+                    "Payment Successful",
+                subtitle:
+                    "Your payment has been verified.",
+                color:
+                    const Color(0xff2E7D32),
+              ),
+            ]
+
+            // =================================================
+            // PROOF SUBMITTED
+            // =================================================
+
+            else if (proofSubmitted) ...[
+              const SizedBox(height: 18),
+
+              _statusBox(
+                icon:
+                    Icons.hourglass_top_rounded,
+                title:
+                    "Payment Proof Submitted",
+                subtitle:
+                    "Our team is verifying your payment.",
+                color:
+                    const Color(0xffEF6C00),
+              ),
+
+              if (proof.isNotEmpty) ...[
+                const SizedBox(height: 16),
+
+                const Text(
+                  "Your Screenshot",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        FontWeight.w900,
+                    color:
+                        Color(0xff44212E),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                _buildProofImage(
+                  proof,
+                ),
+              ],
+            ]
+
+            // =================================================
+            // PENDING
+            // =================================================
+
+            else ...[
+              const SizedBox(height: 20),
+
+              _statusBox(
+                icon:
+                    Icons.schedule_rounded,
+                title:
+                    "Payment Pending",
+                subtitle:
+                    "Complete the payment and upload your screenshot.",
+                color:
+                    const Color(0xffEF6C00),
+              ),
+
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+
+                child: ElevatedButton.icon(
+                  onPressed:
+                      _uploadingProof
+                          ? null
+                          : () {
+                              _pickPaymentProof(
+                                message,
+                              );
+                            },
+
+                  icon:
+                      _uploadingProof
+                          ? const SizedBox(
+                              width: 19,
+                              height: 19,
+                              child:
+                                  CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color:
+                                    Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons
+                                  .cloud_upload_rounded,
+                            ),
+
+                  label: Text(
+                    _uploadingProof
+                        ? "Uploading..."
+                        : "I've Paid — Upload Screenshot",
+                  ),
+
+                  style:
+                      ElevatedButton.styleFrom(
+                    backgroundColor:
+                        const Color(
+                      0xffE91E63,
+                    ),
+
+                    foregroundColor:
+                        Colors.white,
+
+                    elevation: 0,
+
+                    shape:
+                        RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(
+                        16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // PAYMENT STATUS
+  // =========================================================
+
+  Widget _statusBox({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+
+      padding:
+          const EdgeInsets.all(14),
+
+      decoration:
+          BoxDecoration(
+        color:
+            color.withOpacity(.08),
+        borderRadius:
+            BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              color.withOpacity(.16),
+        ),
+      ),
+
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 25,
+          ),
+
+          const SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight:
+                        FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  subtitle,
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(0xff6F6268),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // PROOF IMAGE
+  // =========================================================
+
+  Widget _buildProofImage(
+    String url,
+  ) {
+    return ClipRRect(
+      borderRadius:
+          BorderRadius.circular(18),
+
+      child: Container(
+        width: double.infinity,
+        constraints:
+            const BoxConstraints(
+          maxHeight: 420,
+        ),
+
+        decoration:
+            BoxDecoration(
+          color:
+              const Color(0xffF7F4F6),
+          borderRadius:
+              BorderRadius.circular(18),
+        ),
+
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
+
+          loadingBuilder:
+              (context, child, progress) {
+            if (progress == null) {
+              return child;
+            }
+
+            return const Padding(
+              padding:
+                  EdgeInsets.all(40),
+              child:
+                  CircularProgressIndicator(
+                color:
+                    Color(0xffE91E63),
+              ),
+            );
+          },
+
+          errorBuilder:
+              (_, __, ___) {
+            return const Padding(
+              padding:
+                  EdgeInsets.all(30),
+              child: Icon(
+                Icons.broken_image_outlined,
+                size: 45,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // ORDER CARD
+  // =========================================================
+
+  Widget _buildOrderCard(
+    ChatMessageModel message,
+  ) {
+    final summary =
+        message.orderSummary ?? {};
+
+    return Container(
+      margin:
+          const EdgeInsets.only(
+        bottom: 18,
+      ),
+
+      decoration:
+          BoxDecoration(
+        color: Colors.white,
+
+        borderRadius:
+            BorderRadius.circular(26),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withOpacity(.05),
+            blurRadius: 20,
+            offset:
+                const Offset(0, 10),
+          ),
+        ],
+      ),
+
+      child: Padding(
+        padding:
+            const EdgeInsets.all(18),
+
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
+          children: [
+            Row(
+              children: [
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: BoxDecoration(
+                  decoration:
+                      BoxDecoration(
                     borderRadius:
-                        BorderRadius.circular(16),
+                        BorderRadius.circular(
+                      16,
+                    ),
                     gradient:
                         const LinearGradient(
                       colors: [
@@ -312,7 +1347,6 @@ class _OrderChatScreenState
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-
                       Text(
                         "Order Placed Successfully",
                         style: TextStyle(
@@ -338,10 +1372,6 @@ class _OrderChatScreenState
 
             const SizedBox(height: 20),
 
-            //////////////////////////////////////////////////////
-            /// DETAILS
-            //////////////////////////////////////////////////////
-
             _infoRow(
               Icons.shopping_cart_outlined,
               "Items",
@@ -364,11 +1394,12 @@ class _OrderChatScreenState
               "₹${summary["shippingFee"] ?? 0}",
             ),
 
-            const Divider(height: 28),
+            const Divider(
+              height: 28,
+            ),
 
             Row(
               children: [
-
                 const Text(
                   "Total",
                   style: TextStyle(
@@ -381,8 +1412,10 @@ class _OrderChatScreenState
 
                 Text(
                   "₹${summary["totalAmount"] ?? 0}",
-                  style: const TextStyle(
-                    color: Color(0xffE91E63),
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(0xffE91E63),
                     fontWeight:
                         FontWeight.w900,
                     fontSize: 22,
@@ -395,7 +1428,6 @@ class _OrderChatScreenState
 
             Row(
               children: [
-
                 _statusChip(
                   summary["orderStatus"] ??
                       "Placed",
@@ -417,95 +1449,198 @@ class _OrderChatScreenState
     );
   }
 
-  //////////////////////////////////////////////////////
-  /// NORMAL CHAT BUBBLE
-  //////////////////////////////////////////////////////
+  // =========================================================
+  // INFO ROW
+  // =========================================================
 
-  return Align(
-    alignment: isMine
-        ? Alignment.centerRight
-        : Alignment.centerLeft,
-    child: Container(
-      margin:
-          const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      constraints: const BoxConstraints(
-        maxWidth: 290,
-      ),
-      decoration: BoxDecoration(
-        color: isMine
-            ? const Color(0xffE91E63)
-            : Colors.white,
-        borderRadius:
-            BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withOpacity(.05),
-            blurRadius: 12,
+  Widget _infoRow(
+    IconData icon,
+    String title,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color:
+              const Color(0xffE91E63),
+        ),
+
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Text(title),
+        ),
+
+        Text(
+          value,
+          style:
+              const TextStyle(
+            fontWeight:
+                FontWeight.bold,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // STATUS CHIP
+  // =========================================================
+
+  Widget _statusChip(
+    String text,
+    Color color,
+  ) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 7,
       ),
+
+      decoration:
+          BoxDecoration(
+        color:
+            color.withOpacity(.10),
+        borderRadius:
+            BorderRadius.circular(30),
+      ),
+
       child: Text(
-        message.text,
+        text,
         style: TextStyle(
-          color: isMine
-              ? Colors.white
-              : Colors.black87,
-          height: 1.5,
+          color: color,
+          fontWeight:
+              FontWeight.bold,
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _infoRow(
-  IconData icon,
-  String title,
-  String value,
-) {
-  return Row(
-    children: [
-      Icon(
-        icon,
-        size: 18,
-        color: const Color(0xffE91E63),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Text(title),
-      ),
-      Text(
-        value,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
+  // =========================================================
+  // DOUBLE
+  // =========================================================
+
+  double _toDouble(
+    dynamic value,
+  ) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(
+          value?.toString() ?? "",
+        ) ??
+        0;
+  }
+
+  // =========================================================
+  // SUCCESS
+  // =========================================================
+
+  void _showSuccess(
+    String message,
+  ) {
+    ScaffoldMessenger.of(context)
+        .hideCurrentSnackBar();
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        behavior:
+            SnackBarBehavior.floating,
+
+        margin:
+            const EdgeInsets.all(16),
+
+        backgroundColor:
+            const Color(0xff2E7D32),
+
+        shape:
+            RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(16),
+        ),
+
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Text(
+                message,
+                style:
+                    const TextStyle(
+                  color: Colors.white,
+                  fontWeight:
+                      FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ],
-  );
-}
+    );
+  }
 
-Widget _statusChip(
-  String text,
-  Color color,
-) {
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 14,
-      vertical: 7,
-    ),
-    decoration: BoxDecoration(
-      color: color.withOpacity(.10),
-      borderRadius:
-          BorderRadius.circular(30),
-    ),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
+  // =========================================================
+  // ERROR
+  // =========================================================
+
+  void _showError(
+    String message,
+  ) {
+    ScaffoldMessenger.of(context)
+        .hideCurrentSnackBar();
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        behavior:
+            SnackBarBehavior.floating,
+
+        margin:
+            const EdgeInsets.all(16),
+
+        backgroundColor:
+            const Color(0xffC62828),
+
+        shape:
+            RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(16),
+        ),
+
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Text(
+                message,
+                style:
+                    const TextStyle(
+                  color: Colors.white,
+                  fontWeight:
+                      FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

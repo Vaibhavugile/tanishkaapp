@@ -982,12 +982,18 @@ Widget _buildPaymentMessage(
   ///////////////////////////////////////////////////////////
 
   final qrImage =
-      (payment["qrImage"] ??
-              payment["screenshotUrl"] ??
-              payment["screenshot"] ??
-              payment["image"] ??
-              "")
-          .toString();
+    (payment["qrImage"] ?? "")
+        .toString()
+        .trim();
+
+final paymentProofImage =
+    (payment["paymentProofImage"] ??
+            payment["screenshotUrl"] ??
+            payment["screenshot"] ??
+            payment["image"] ??
+            "")
+        .toString()
+        .trim();
 
   ///////////////////////////////////////////////////////////
   /// VERIFICATION DATA
@@ -1542,7 +1548,97 @@ Widget _buildPaymentMessage(
                 ),
               ),
             ],
+///////////////////////////////////////////////////////////
+/// CUSTOMER PAYMENT SCREENSHOT
+///////////////////////////////////////////////////////////
 
+if (paymentProofImage.isNotEmpty) ...[
+  const SizedBox(height: 18),
+
+  const Text(
+    "Customer Payment Screenshot",
+    style: TextStyle(
+      color: plum,
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+    ),
+  ),
+
+  const SizedBox(height: 9),
+
+  GestureDetector(
+    onTap: () {
+      _showPaymentImage(paymentProofImage);
+    },
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xffF8F4F6),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xffEDE1E7),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          paymentProofImage,
+          width: double.infinity,
+          height: 230,
+          fit: BoxFit.contain,
+          loadingBuilder: (
+            context,
+            child,
+            progress,
+          ) {
+            if (progress == null) {
+              return child;
+            }
+
+            return const SizedBox(
+              height: 230,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: primary,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (
+            context,
+            error,
+            stackTrace,
+          ) {
+            return const SizedBox(
+              height: 180,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: muted,
+                  size: 40,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+
+  const SizedBox(height: 6),
+
+  const Center(
+    child: Text(
+      "Tap screenshot to view full size",
+      style: TextStyle(
+        color: muted,
+        fontSize: 9,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+],
             //////////////////////////////////////////////////
             /// VERIFIED INFORMATION
             //////////////////////////////////////////////////

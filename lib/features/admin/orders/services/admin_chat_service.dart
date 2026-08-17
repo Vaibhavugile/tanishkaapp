@@ -683,7 +683,47 @@ Future<void> approvePayment({
   /////////////////////////////////////////////////////////
   /// COMMIT
   /////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+/// UPDATE ORDER SUMMARY PAYMENT STATUS
+/////////////////////////////////////////////////////////
 
+final orderMessagesSnapshot = await chatRef
+    .collection("messages")
+    .where(
+      "type",
+      isEqualTo: "order",
+    )
+    .limit(1)
+    .get();
+
+if (orderMessagesSnapshot.docs.isNotEmpty) {
+  final orderMessage =
+      orderMessagesSnapshot.docs.first;
+
+  final orderMessageData =
+      orderMessage.data();
+
+  final rawOrderSummary =
+      orderMessageData["orderSummary"];
+
+  if (rawOrderSummary is Map) {
+    final orderSummary =
+        Map<String, dynamic>.from(
+      rawOrderSummary,
+    );
+
+    orderSummary["paymentStatus"] =
+        "Paid";
+
+    batch.update(
+      orderMessage.reference,
+      {
+        "orderSummary":
+            orderSummary,
+      },
+    );
+  }
+}
   await batch.commit();
 }
 /////////////////////////////////////////////////////////

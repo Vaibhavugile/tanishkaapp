@@ -933,11 +933,13 @@ Widget _buildCustomerPaymentProof(
               : {};
 
       final proofImage =
-          (paymentData[
-                      "paymentProofImage"] ??
-                  "")
-              .toString()
-              .trim();
+    (paymentData["paymentProofImage"] ??
+            paymentData["screenshotUrl"] ??
+            paymentData["screenshot"] ??
+            paymentData["image"] ??
+            "")
+        .toString()
+        .trim();
 
       final status =
           (paymentData["status"] ??

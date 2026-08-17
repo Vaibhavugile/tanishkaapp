@@ -179,6 +179,7 @@ class OrderChatService {
 /// Does NOT mark payment as successful.
 /////////////////////////////////////////////////////////
 
+
 Future<void> submitPaymentProof({
   required String orderId,
   required String messageId,
@@ -280,7 +281,7 @@ Future<void> submitPaymentProof({
   }
 
   /////////////////////////////////////////////////////////
-  /// DON'T ALLOW DUPLICATE VERIFICATION REQUEST
+  /// DON'T ALLOW DUPLICATE PROOF
   /////////////////////////////////////////////////////////
 
   if (currentStatus ==
@@ -304,13 +305,14 @@ Future<void> submitPaymentProof({
       );
 
   /////////////////////////////////////////////////////////
-  /// UPLOAD
+  /// UPLOAD PAYMENT SCREENSHOT
   /////////////////////////////////////////////////////////
 
   await storageRef.putFile(
     imageFile,
     SettableMetadata(
-      contentType: "image/jpeg",
+      contentType:
+          "image/jpeg",
       customMetadata: {
         "orderId": orderId,
         "messageId": messageId,
@@ -331,8 +333,7 @@ Future<void> submitPaymentProof({
   /// UPDATE PAYMENT DATA
   /////////////////////////////////////////////////////////
 
-  paymentData[
-          "status"] =
+  paymentData["status"] =
       "proof_submitted";
 
   paymentData[
@@ -356,6 +357,31 @@ Future<void> submitPaymentProof({
       .doc(orderId);
 
   /////////////////////////////////////////////////////////
+  /// ORDER
+  /////////////////////////////////////////////////////////
+
+  final orderRef = _firestore
+      .collection("orders")
+      .doc(orderId);
+
+  /////////////////////////////////////////////////////////
+  /// GET ORIGINAL ORDER MESSAGE
+  ///
+  /// This is the message containing
+  /// orderSummary.
+  /////////////////////////////////////////////////////////
+
+  final orderMessagesSnapshot =
+      await chatRef
+          .collection("messages")
+          .where(
+            "type",
+            isEqualTo: "order",
+          )
+          .limit(1)
+          .get();
+
+  /////////////////////////////////////////////////////////
   /// BATCH
   /////////////////////////////////////////////////////////
 
@@ -363,7 +389,7 @@ Future<void> submitPaymentProof({
       _firestore.batch();
 
   /////////////////////////////////////////////////////////
-  /// UPDATE PAYMENT MESSAGE
+  /// 1. UPDATE PAYMENT MESSAGE
   /////////////////////////////////////////////////////////
 
   batch.update(
@@ -375,12 +401,34 @@ Future<void> submitPaymentProof({
   );
 
   /////////////////////////////////////////////////////////
-  /// UPDATE CHAT SUMMARY
+  /// 2. UPDATE ORDERS/{ORDER ID}
+  ///
+  /// Pending
+  ///     ↓
+  /// Confirmation Pending
+  /////////////////////////////////////////////////////////
+
+  batch.update(
+    orderRef,
+    {
+      "paymentStatus":
+          "Confirmation Pending",
+    },
+  );
+
+  /////////////////////////////////////////////////////////
+  /// 3. UPDATE ORDER CHAT
+  ///
+  /// OrderCard reads paymentStatus
+  /// from orderChats/{orderId}.
   /////////////////////////////////////////////////////////
 
   batch.update(
     chatRef,
     {
+      "paymentStatus":
+          "Confirmation Pending",
+
       "lastMessage":
           "Payment proof submitted",
 
@@ -405,12 +453,53 @@ Future<void> submitPaymentProof({
   );
 
   /////////////////////////////////////////////////////////
-  /// COMMIT
+  /// 4. UPDATE ORDER SUMMARY
+  ///
+  /// OrderSummaryCard reads paymentStatus
+  /// from orderSummary.
+  /////////////////////////////////////////////////////////
+
+  if (orderMessagesSnapshot
+      .docs
+      .isNotEmpty) {
+    final orderMessage =
+        orderMessagesSnapshot
+            .docs
+            .first;
+
+    final orderMessageData =
+        orderMessage.data();
+
+    final rawOrderSummary =
+        orderMessageData[
+            "orderSummary"];
+
+    if (rawOrderSummary is Map) {
+      final orderSummary =
+          Map<String, dynamic>.from(
+        rawOrderSummary,
+      );
+
+      orderSummary[
+              "paymentStatus"] =
+          "Confirmation Pending";
+
+      batch.update(
+        orderMessage.reference,
+        {
+          "orderSummary":
+              orderSummary,
+        },
+      );
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  /// COMMIT EVERYTHING
   /////////////////////////////////////////////////////////
 
   await batch.commit();
 }
-
   /////////////////////////////////////////////////////////
   /// MARK AS READ
   /////////////////////////////////////////////////////////

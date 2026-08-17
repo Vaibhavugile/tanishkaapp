@@ -1045,30 +1045,27 @@ class _OrderSummaryCardState
   }
 
   Color _paymentStatusColor(
-    String status,
-  ) {
-    final value =
-        status.toLowerCase();
+  String status,
+) {
+  final value = status.toLowerCase();
 
-    if (value.contains("paid") ||
-        value.contains("verified") ||
-        value.contains("complete")) {
-      return const Color(
-        0xff2E7D32,
-      );
-    }
-
-    if (value.contains("failed") ||
-        value.contains("cancel")) {
-      return const Color(
-        0xffC62828,
-      );
-    }
-
-    return const Color(
-      0xffEF6C00,
-    );
+  if (value.contains("paid") ||
+      value.contains("verified") ||
+      value.contains("complete")) {
+    return const Color(0xff2E7D32);
   }
+
+  if (value.contains("confirmation")) {
+    return const Color(0xff1565C0);
+  }
+
+  if (value.contains("failed") ||
+      value.contains("cancel")) {
+    return const Color(0xffC62828);
+  }
+
+  return const Color(0xffEF6C00);
+}
 
   ///////////////////////////////////////////////////////////
   /// ICONS
@@ -1100,24 +1097,27 @@ class _OrderSummaryCardState
   }
 
   IconData _paymentStatusIcon(
-    String status,
-  ) {
-    final value =
-        status.toLowerCase();
+  String status,
+) {
+  final value = status.toLowerCase();
 
-    if (value.contains("paid") ||
-        value.contains("verified") ||
-        value.contains("complete")) {
-      return Icons.check_circle_outline_rounded;
-    }
-
-    if (value.contains("failed") ||
-        value.contains("cancel")) {
-      return Icons.error_outline_rounded;
-    }
-
-    return Icons.schedule_rounded;
+  if (value.contains("paid") ||
+      value.contains("verified") ||
+      value.contains("complete")) {
+    return Icons.check_circle_outline_rounded;
   }
+
+  if (value.contains("confirmation")) {
+    return Icons.hourglass_top_rounded;
+  }
+
+  if (value.contains("failed") ||
+      value.contains("cancel")) {
+    return Icons.error_outline_rounded;
+  }
+
+  return Icons.schedule_rounded;
+}
 
   ///////////////////////////////////////////////////////////
   /// LOADING

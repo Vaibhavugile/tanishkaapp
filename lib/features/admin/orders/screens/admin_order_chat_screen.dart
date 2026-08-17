@@ -9,6 +9,7 @@ import '../widgets/order_summary_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin_payment_screen.dart';
+import 'admin_packing_screen.dart';
 enum AdminMessageType {
   text,
   payment,
@@ -2149,12 +2150,17 @@ void _showMessageTypePicker() {
               type: AdminMessageType.packing,
               color: Colors.orange,
               onTap: () {
-                Navigator.pop(sheetContext);
+  Navigator.pop(sheetContext);
 
-                _selectMessageType(
-                  AdminMessageType.packing,
-                );
-              },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AdminPackingScreen(
+        orderId: widget.orderId,
+      ),
+    ),
+  );
+},
             ),
 
             //////////////////////////////////////////////////

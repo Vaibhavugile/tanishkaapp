@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/order_chat_model.dart';
 import '../../../models/chat_message_model.dart';
 import '../../../services/order_chat_service.dart';
-
+import 'package:tanishka/features/orders/screens/customer_packing_report_screen.dart';
 class OrderChatScreen extends StatefulWidget {
   final OrderChatModel chat;
 
@@ -605,88 +605,476 @@ class _OrderChatScreenState
   // MESSAGE ROUTER
   // =========================================================
 
-  Widget buildMessageBubble(
-    ChatMessageModel message,
-  ) {
-    // -------------------------------------------------------
-    // ORDER
-    // -------------------------------------------------------
+ ///////////////////////////////////////////////////////////
+/// MESSAGE ROUTER
+///////////////////////////////////////////////////////////
 
-    if (message.isOrder) {
-      return _buildOrderCard(
-        message,
-      );
-    }
+Widget buildMessageBubble(
+  ChatMessageModel message,
+) {
+  /////////////////////////////////////////////////////////
+  /// ORDER
+  /////////////////////////////////////////////////////////
 
-    // -------------------------------------------------------
-    // PAYMENT
-    // -------------------------------------------------------
-
-    if (message.isPayment) {
-      return _buildPaymentCard(
-        message,
-      );
-    }
-
-    // -------------------------------------------------------
-    // NORMAL MESSAGE
-    // -------------------------------------------------------
-
-    final isMine =
-        message.isCustomer;
-
-    return Align(
-      alignment: isMine
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
-
-      child: Container(
-        margin:
-            const EdgeInsets.only(
-          bottom: 14,
-        ),
-
-        padding:
-            const EdgeInsets.all(14),
-
-        constraints:
-            const BoxConstraints(
-          maxWidth: 290,
-        ),
-
-        decoration:
-            BoxDecoration(
-          color: isMine
-              ? const Color(
-                  0xffE91E63,
-                )
-              : Colors.white,
-
-          borderRadius:
-              BorderRadius.circular(22),
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black
-                  .withOpacity(.05),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-
-        child: Text(
-          message.text,
-
-          style: TextStyle(
-            color: isMine
-                ? Colors.white
-                : Colors.black87,
-            height: 1.5,
-          ),
-        ),
-      ),
+  if (message.isOrder) {
+    return _buildOrderCard(
+      message,
     );
   }
+
+  /////////////////////////////////////////////////////////
+  /// PAYMENT
+  /////////////////////////////////////////////////////////
+
+  if (message.isPayment) {
+    return _buildPaymentCard(
+      message,
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// PACKING REPORT
+  /////////////////////////////////////////////////////////
+
+  if (message.isPacking) {
+    final packing =
+        message.packingData ?? {};
+
+    if (packing["reportType"] ==
+        "packing_report") {
+      return _buildPackingReportCard(
+        message,
+      );
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  /// NORMAL MESSAGE
+  /////////////////////////////////////////////////////////
+
+  final isMine =
+      message.isCustomer;
+
+  return Align(
+    alignment: isMine
+        ? Alignment.centerRight
+        : Alignment.centerLeft,
+
+    child: Container(
+      margin:
+          const EdgeInsets.only(
+        bottom: 14,
+      ),
+
+      padding:
+          const EdgeInsets.all(14),
+
+      constraints:
+          const BoxConstraints(
+        maxWidth: 290,
+      ),
+
+      decoration:
+          BoxDecoration(
+        color: isMine
+            ? const Color(0xffE91E63)
+            : Colors.white,
+
+        borderRadius:
+            BorderRadius.circular(22),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withOpacity(.05),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+
+      child: Text(
+        message.text,
+
+        style: TextStyle(
+          color: isMine
+              ? Colors.white
+              : Colors.black87,
+          height: 1.5,
+        ),
+      ),
+    ),
+  );
+}
+///////////////////////////////////////////////////////////
+/// PACKING REPORT CARD
+///////////////////////////////////////////////////////////
+
+Widget _buildPackingReportCard(
+  ChatMessageModel message,
+) {
+  final packing =
+      message.packingData ?? {};
+
+  final totalItems =
+      _toInt(
+    packing["totalItems"],
+  );
+
+  final receivedItems =
+      _toInt(
+    packing["receivedItems"],
+  );
+
+  final missingItems =
+      _toInt(
+    packing["missingItems"],
+  );
+
+  final confirmedItems =
+      _toInt(
+    packing["confirmedItems"],
+  );
+
+  final status =
+      (packing["status"] ??
+              "pending")
+          .toString()
+          .toLowerCase();
+
+  final completed =
+      status == "completed";
+
+  return Container(
+    width: double.infinity,
+
+    margin:
+        const EdgeInsets.only(
+      bottom: 18,
+    ),
+
+    decoration:
+        BoxDecoration(
+      color: Colors.white,
+
+      borderRadius:
+          BorderRadius.circular(24),
+
+      border: Border.all(
+        color:
+            const Color(0xffF1E2E8),
+      ),
+
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black
+              .withOpacity(.055),
+          blurRadius: 20,
+          offset:
+              const Offset(0, 8),
+        ),
+      ],
+    ),
+
+    child: Padding(
+      padding:
+          const EdgeInsets.all(16),
+
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+
+        children: [
+
+          ///////////////////////////////////////////////////
+          /// HEADER
+          ///////////////////////////////////////////////////
+
+          Row(
+            children: [
+
+              Container(
+                width: 46,
+                height: 46,
+
+                decoration:
+                    const BoxDecoration(
+                  shape: BoxShape.circle,
+
+                  gradient:
+                      LinearGradient(
+                    colors: [
+                      Color(0xffFFCCE1),
+                      Color(0xffE91E63),
+                    ],
+                  ),
+                ),
+
+                child: const Icon(
+                  Icons.inventory_2_rounded,
+                  color: Colors.white,
+                  size: 23,
+                ),
+              ),
+
+              const SizedBox(
+                width: 11,
+              ),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  children: [
+
+                    Text(
+                      "Packing Report",
+                      style:
+                          TextStyle(
+                        fontSize: 16,
+                        fontWeight:
+                            FontWeight.w900,
+                        color:
+                            Color(0xff44212E),
+                      ),
+                    ),
+
+                    SizedBox(
+                      height: 3,
+                    ),
+
+                    Text(
+                      "Your order packing summary",
+                      style:
+                          TextStyle(
+                        fontSize: 11,
+                        fontWeight:
+                            FontWeight.w600,
+                        color:
+                            Color(0xff9B7B85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(
+            height: 16,
+          ),
+
+          ///////////////////////////////////////////////////
+          /// SUMMARY
+          ///////////////////////////////////////////////////
+
+          Container(
+            padding:
+                const EdgeInsets.all(12),
+
+            decoration:
+                BoxDecoration(
+              color:
+                  const Color(0xffFFF7FA),
+
+              borderRadius:
+                  BorderRadius.circular(16),
+            ),
+
+            child: Row(
+              children: [
+
+                Expanded(
+                  child: _packingStat(
+                    "Items",
+                    totalItems,
+                    Icons.inventory_2_outlined,
+                  ),
+                ),
+
+                Expanded(
+                  child: _packingStat(
+                    "Received",
+                    receivedItems,
+                    Icons.check_circle_outline,
+                  ),
+                ),
+
+                Expanded(
+                  child: _packingStat(
+                    "Missing",
+                    missingItems,
+                    Icons.warning_amber_rounded,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+            height: 12,
+          ),
+
+          ///////////////////////////////////////////////////
+          /// CONFIRMED
+          ///////////////////////////////////////////////////
+
+          Row(
+            children: [
+
+              Icon(
+                completed
+                    ? Icons.check_circle_rounded
+                    : Icons.pending_rounded,
+                size: 18,
+                color: completed
+                    ? const Color(0xff2E7D32)
+                    : const Color(0xffEF6C00),
+              ),
+
+              const SizedBox(
+                width: 7,
+              ),
+
+              Expanded(
+                child: Text(
+                  "$confirmedItems / $totalItems items confirmed",
+                  style:
+                      const TextStyle(
+                    fontSize: 12,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        Color(0xff44212E),
+                  ),
+                ),
+              ),
+
+              Text(
+                completed
+                    ? "Completed"
+                    : "In Progress",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight:
+                      FontWeight.w800,
+                  color: completed
+                      ? const Color(0xff2E7D32)
+                      : const Color(0xffEF6C00),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(
+            height: 14,
+          ),
+
+          ///////////////////////////////////////////////////
+          /// VIEW FULL REPORT
+          ///////////////////////////////////////////////////
+
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _openFullPackingReport(
+                  message,
+                );
+              },
+
+              icon: const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+              ),
+
+              label: const Text(
+                "View Full Report",
+              ),
+
+              style:
+                  OutlinedButton.styleFrom(
+                foregroundColor:
+                    const Color(0xffE91E63),
+
+                side: const BorderSide(
+                  color:
+                      Color(0xffE91E63),
+                ),
+
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    14,
+                  ),
+                ),
+
+                textStyle:
+                    const TextStyle(
+                  fontWeight:
+                      FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+///////////////////////////////////////////////////////////
+/// PACKING STAT
+///////////////////////////////////////////////////////////
+
+Widget _packingStat(
+  String title,
+  int value,
+  IconData icon,
+) {
+  return Column(
+    children: [
+
+      Icon(
+        icon,
+        size: 18,
+        color:
+            const Color(0xffE91E63),
+      ),
+
+      const SizedBox(
+        height: 5,
+      ),
+
+      Text(
+        "$value",
+        style:
+            const TextStyle(
+          fontSize: 16,
+          fontWeight:
+              FontWeight.w900,
+          color:
+              Color(0xff44212E),
+        ),
+      ),
+
+      Text(
+        title,
+        style:
+            const TextStyle(
+          fontSize: 9,
+          fontWeight:
+              FontWeight.w700,
+          color:
+              Color(0xff9B7B85),
+        ),
+      ),
+    ],
+  );
+}
 
   // =========================================================
   // PAYMENT CARD
@@ -1535,6 +1923,26 @@ class _OrderChatScreenState
         ) ??
         0;
   }
+  ///////////////////////////////////////////////////////////
+/// INTEGER
+///////////////////////////////////////////////////////////
+
+int _toInt(
+  dynamic value,
+) {
+  if (value is int) {
+    return value;
+  }
+
+  if (value is num) {
+    return value.toInt();
+  }
+
+  return int.tryParse(
+        value?.toString() ?? "",
+      ) ??
+      0;
+}
 
   // =========================================================
   // SUCCESS
@@ -1589,7 +1997,43 @@ class _OrderChatScreenState
       ),
     );
   }
+///////////////////////////////////////////////////////////
+/// OPEN FULL PACKING REPORT
+///////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////
+/// OPEN FULL PACKING REPORT
+///////////////////////////////////////////////////////////
+
+void _openFullPackingReport(
+  ChatMessageModel message,
+) {
+  final packing =
+      message.packingData ?? {};
+
+  final orderId =
+      (packing["orderId"] ??
+              widget.chat.orderId)
+          .toString()
+          .trim();
+
+  if (orderId.isEmpty) {
+    _showError(
+      "Order ID is missing.",
+    );
+    return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          CustomerPackingReportScreen(
+        orderId: orderId,
+      ),
+    ),
+  );
+}
   // =========================================================
   // ERROR
   // =========================================================

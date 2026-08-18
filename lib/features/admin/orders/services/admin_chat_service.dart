@@ -960,4 +960,51 @@ Future<void> sendPaymentRequest({
 
   await batch.commit();
 }
+///////////////////////////////////////////////////////////
+/// SEND PACKING REPORT
+///
+/// Sends only a SMALL summary to chat.
+/// The complete packing items are NOT copied into chat.
+/// The customer can open the full report separately.
+///////////////////////////////////////////////////////////
+
+Future<void> sendPackingReport({
+  required String orderId,
+  required int totalItems,
+  required int receivedItems,
+  required int missingItems,
+  required int confirmedItems,
+  required String status,
+}) async {
+  final packingData = <String, dynamic>{
+    "reportType": "packing_report",
+
+    "orderId": orderId,
+
+    "totalItems": totalItems,
+
+    "receivedItems": receivedItems,
+
+    "missingItems": missingItems,
+
+    "confirmedItems": confirmedItems,
+
+    "status": status,
+
+    "sentAt":
+        FieldValue.serverTimestamp(),
+
+    "sentBy": _adminId,
+  };
+
+  await _sendAdminMessage(
+    orderId: orderId,
+
+    type: "packing",
+
+    text: "📦 Packing Report",
+
+    packingData: packingData,
+  );
+}
 }

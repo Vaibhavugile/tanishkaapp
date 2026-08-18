@@ -273,10 +273,27 @@ Future<void> _sendFullPackingReport() async {
         _buildFullPackingReport();
 
     await AdminChatService.instance
-        .sendMessage(
-      orderId: widget.orderId,
-      text: report,
-    );
+    .sendPackingReport(
+  orderId: widget.orderId,
+
+  totalItems:
+      _totalItems,
+
+  receivedItems:
+      _receivedItems,
+
+  missingItems:
+      _missingItems,
+
+  confirmedItems:
+      _confirmedCount,
+
+  status:
+      _confirmedCount ==
+              _totalProductLines
+          ? "completed"
+          : "pending",
+);
 
     if (!mounted) {
       return;

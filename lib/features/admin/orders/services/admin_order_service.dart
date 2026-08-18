@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 class AdminOrderService {
   AdminOrderService._();
 
@@ -8,7 +9,19 @@ class AdminOrderService {
 
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
+      final FirebaseAuth _auth =
+    FirebaseAuth.instance;
+String get _adminId {
+  final user = _auth.currentUser;
 
+  if (user == null) {
+    throw Exception(
+      "Admin not logged in.",
+    );
+  }
+
+  return user.uid;
+}
   static const int pageSize = 25;
 
   ///////////////////////////////////////////////////////////
@@ -439,8 +452,7 @@ class AdminOrderService {
         status;
 
     itemData["checkedAt"] =
-        FieldValue.serverTimestamp();
-
+    Timestamp.now();
     packingItems[itemIndex] =
         itemData;
 
@@ -523,6 +535,10 @@ class AdminOrderService {
 /// UPDATE PACKING ITEM DETAILS
 ///////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////
+/// UPDATE PACKING ITEM DETAILS
+///////////////////////////////////////////////////////////
+
 Future<void> updatePackingItemDetails({
   required String orderId,
   required int itemIndex,
@@ -531,7 +547,9 @@ Future<void> updatePackingItemDetails({
   int? quantity,
   int? missingQuantity,
   String? adminNote,
+  
 }) async {
+  final adminId = _adminId;
   final chatRef = _firestore
       .collection("orderChats")
       .doc(orderId);
@@ -588,7 +606,7 @@ Future<void> updatePackingItemDetails({
   }
 
   /////////////////////////////////////////////////////////
-  /// ITEM
+  /// EXISTING ITEM
   /////////////////////////////////////////////////////////
 
   final rawItem =
@@ -633,30 +651,43 @@ Future<void> updatePackingItemDetails({
 
   /////////////////////////////////////////////////////////
   /// UPDATED TIME
+  ///
+  /// IMPORTANT:
+  /// This item is inside an ARRAY.
+  /// FieldValue.serverTimestamp() is NOT allowed here.
   /////////////////////////////////////////////////////////
 
-  itemData["updatedAt"] =
-      FieldValue.serverTimestamp();
+  itemData["updatedBy"] =
+    adminId;
 
+itemData["updatedAt"] =
+    Timestamp.now();
   /////////////////////////////////////////////////////////
-  /// SAVE ITEM
+  /// SAVE ITEM BACK TO ARRAY
   /////////////////////////////////////////////////////////
 
   packingItems[itemIndex] =
       itemData;
 
   /////////////////////////////////////////////////////////
-  /// SAVE PACKING DATA
+  /// SAVE PACKING ITEMS
   /////////////////////////////////////////////////////////
 
   packingData["items"] =
       packingItems;
 
+  /////////////////////////////////////////////////////////
+  /// TOP LEVEL TIMESTAMP
+  ///
+  /// This IS allowed because packingData is a map,
+  /// not an array element.
+  /////////////////////////////////////////////////////////
+
   packingData["updatedAt"] =
       FieldValue.serverTimestamp();
 
   /////////////////////////////////////////////////////////
-  /// FIRESTORE
+  /// SAVE TO FIRESTORE
   /////////////////////////////////////////////////////////
 
   await chatRef.update({
@@ -666,5 +697,313 @@ Future<void> updatePackingItemDetails({
     "updatedAt":
         FieldValue.serverTimestamp(),
   });
+}
+///////////////////////////////////////////////////////////
+/// CONFIRM PACKING ITEM
+///////////////////////////////////////////////////////////
+
+Future<void> confirmPackingItem({
+  required String orderId,
+  required int itemIndex,
+}) async {
+  final adminId = _adminId;
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final snapshot =
+      await chatRef.get();
+
+  if (!snapshot.exists) {
+    throw Exception(
+      "Order chat not found.",
+    );
+  }
+
+  final data =
+      snapshot.data() ?? {};
+
+  /////////////////////////////////////////////////////////
+  /// PACKING
+  /////////////////////////////////////////////////////////
+
+  final rawPacking =
+      data["packing"];
+
+  final Map<String, dynamic>
+      packingData =
+      rawPacking is Map
+          ? Map<String, dynamic>.from(
+              rawPacking,
+            )
+          : {};
+
+  /////////////////////////////////////////////////////////
+  /// ITEMS
+  /////////////////////////////////////////////////////////
+
+  final rawItems =
+      packingData["items"];
+
+  final List<dynamic>
+      packingItems =
+      rawItems is List
+          ? List<dynamic>.from(
+              rawItems,
+            )
+          : [];
+
+  if (itemIndex < 0 ||
+      itemIndex >= packingItems.length) {
+    throw Exception(
+      "Packing item not found.",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// ITEM
+  /////////////////////////////////////////////////////////
+
+  final rawItem =
+      packingItems[itemIndex];
+
+  final Map<String, dynamic>
+      itemData =
+      rawItem is Map
+          ? Map<String, dynamic>.from(
+              rawItem,
+            )
+          : {};
+
+  /////////////////////////////////////////////////////////
+  /// QUANTITIES
+  /////////////////////////////////////////////////////////
+
+  final ordered =
+      int.tryParse(
+            "${itemData["orderedQuantity"] ?? itemData["quantity"] ?? 0}",
+          ) ??
+          0;
+
+  final received =
+      int.tryParse(
+            "${itemData["receivedQuantity"] ?? itemData["quantity"] ?? 0}",
+          ) ??
+          0;
+
+  final missing =
+      int.tryParse(
+            "${itemData["missingQuantity"] ?? 0}",
+          ) ??
+          0;
+
+  /////////////////////////////////////////////////////////
+  /// VALIDATE
+  /////////////////////////////////////////////////////////
+
+  if (received + missing !=
+      ordered) {
+    throw Exception(
+      "Cannot confirm. Received ($received) + Missing ($missing) must equal Ordered ($ordered).",
+    );
+  }
+
+  /////////////////////////////////////////////////////////
+  /// CONFIRM
+  /////////////////////////////////////////////////////////
+
+  itemData["status"] =
+      "confirmed";
+
+  itemData["confirmedBy"] =
+      adminId;
+
+  itemData["confirmedAt"] =
+      Timestamp.now();
+
+  /////////////////////////////////////////////////////////
+  /// SAVE ITEM
+  /////////////////////////////////////////////////////////
+
+  packingItems[itemIndex] =
+      itemData;
+
+  /////////////////////////////////////////////////////////
+  /// CALCULATE REPORT
+  /////////////////////////////////////////////////////////
+
+  int confirmedCount = 0;
+  int pendingCount = 0;
+
+  int totalOrdered = 0;
+  int totalReceived = 0;
+  int totalMissing = 0;
+
+  for (final raw
+      in packingItems) {
+    if (raw is! Map) {
+      pendingCount++;
+      continue;
+    }
+
+    final map =
+        Map<String, dynamic>.from(
+      raw,
+    );
+
+    final itemOrdered =
+        int.tryParse(
+              "${map["orderedQuantity"] ?? map["quantity"] ?? 0}",
+            ) ??
+            0;
+
+    final itemReceived =
+        int.tryParse(
+              "${map["receivedQuantity"] ?? map["quantity"] ?? 0}",
+            ) ??
+            0;
+
+    final itemMissing =
+        int.tryParse(
+              "${map["missingQuantity"] ?? 0}",
+            ) ??
+            0;
+
+    totalOrdered +=
+        itemOrdered;
+
+    totalReceived +=
+        itemReceived;
+
+    totalMissing +=
+        itemMissing;
+
+    if (map["status"] ==
+        "confirmed") {
+      confirmedCount++;
+    } else {
+      pendingCount++;
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  /// OVERALL STATUS
+  /////////////////////////////////////////////////////////
+
+  final allConfirmed =
+      packingItems.isNotEmpty &&
+          pendingCount == 0;
+
+  packingData["items"] =
+      packingItems;
+
+  packingData["totalItems"] =
+      packingItems.length;
+
+  packingData[
+          "totalOrderedQuantity"] =
+      totalOrdered;
+
+  packingData[
+          "totalReceivedQuantity"] =
+      totalReceived;
+
+  packingData[
+          "totalMissingQuantity"] =
+      totalMissing;
+
+  packingData["confirmedCount"] =
+      confirmedCount;
+
+  packingData["pendingCount"] =
+      pendingCount;
+
+  packingData["status"] =
+      allConfirmed
+          ? "Confirmed"
+          : "In Progress";
+
+  /////////////////////////////////////////////////////////
+  /// LAST UPDATE
+  /////////////////////////////////////////////////////////
+
+  packingData["lastUpdatedBy"] =
+      adminId;
+
+  packingData["lastUpdatedAt"] =
+      FieldValue.serverTimestamp();
+
+  /////////////////////////////////////////////////////////
+  /// FINAL CONFIRMATION
+  /////////////////////////////////////////////////////////
+
+  if (allConfirmed) {
+    packingData["confirmedBy"] =
+        adminId;
+
+    packingData["confirmedAt"] =
+        FieldValue.serverTimestamp();
+  }
+
+  /////////////////////////////////////////////////////////
+  /// SAVE
+  /////////////////////////////////////////////////////////
+
+  await chatRef.update({
+    "packing":
+        packingData,
+
+    "packingStatus":
+        allConfirmed
+            ? "Confirmed"
+            : "In Progress",
+
+    "updatedAt":
+        FieldValue.serverTimestamp(),
+  });
+}
+///////////////////////////////////////////////////////////
+/// GET ADMIN NAME
+///////////////////////////////////////////////////////////
+
+Future<String> getAdminName(
+  String adminId,
+) async {
+  if (adminId.trim().isEmpty) {
+    return "Unknown Admin";
+  }
+
+  try {
+    final doc = await _firestore
+        .collection("admins")
+        .doc(adminId)
+        .get();
+
+    if (doc.exists) {
+      final data =
+          doc.data() ?? {};
+
+      final fullName =
+          (data["fullName"] ?? "")
+              .toString()
+              .trim();
+
+      if (fullName.isNotEmpty) {
+        return fullName;
+      }
+
+      final email =
+          (data["email"] ?? "")
+              .toString()
+              .trim();
+
+      if (email.isNotEmpty) {
+        return email;
+      }
+    }
+  } catch (_) {}
+
+  return adminId;
 }
 }

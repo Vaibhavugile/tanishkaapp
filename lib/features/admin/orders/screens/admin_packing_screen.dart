@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/admin_order_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/admin_chat_service.dart';
 class AdminPackingScreen extends StatefulWidget {
   final String orderId;
 
@@ -96,7 +97,216 @@ final Map<String, String> _adminNames = {};
   ///////////////////////////////////////////////////////////
   /// CONTROLLER HELPERS
   ///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// BUILD FULL PACKING REPORT
+///////////////////////////////////////////////////////////
 
+String _buildFullPackingReport() {
+  final buffer = StringBuffer();
+
+  buffer.writeln("📦 PACKING REPORT");
+  buffer.writeln("");
+  buffer.writeln("Order ID: ${widget.orderId}");
+  buffer.writeln("");
+
+  buffer.writeln("━━━━━━━━━━━━━━━━━━━━");
+  buffer.writeln("ORDER SUMMARY");
+  buffer.writeln("━━━━━━━━━━━━━━━━━━━━");
+
+  buffer.writeln(
+    "Product Lines: $_totalProductLines",
+  );
+
+  buffer.writeln(
+    "Ordered: $_totalItems",
+  );
+
+  buffer.writeln(
+    "Received: $_receivedItems",
+  );
+
+  buffer.writeln(
+    "Missing: $_missingItems",
+  );
+
+  buffer.writeln(
+    "Confirmed: $_confirmedCount / $_totalProductLines",
+  );
+
+  buffer.writeln("");
+
+  /////////////////////////////////////////////////////////
+  /// EACH PRODUCT
+  /////////////////////////////////////////////////////////
+
+  for (
+    int index = 0;
+    index < _items.length;
+    index++
+  ) {
+    final item = _items[index];
+
+    final ordered =
+        _orderedQuantity(item);
+
+    final received =
+        _receivedQuantity(item);
+
+    final missing =
+        _missingQuantity(item);
+
+    final code =
+        (item["productCode"] ?? "")
+            .toString()
+            .trim();
+
+    final variant =
+        _getVariant(item);
+
+    final confirmed =
+        _isItemConfirmed(item);
+
+    buffer.writeln(
+      "━━━━━━━━━━━━━━━━━━━━",
+    );
+
+    buffer.writeln(
+      "ITEM ${index + 1}",
+    );
+
+    buffer.writeln("");
+
+    buffer.writeln(
+      "Product Code: "
+      "${code.isEmpty ? "N/A" : code}",
+    );
+
+    buffer.writeln(
+      "Variant: $variant",
+    );
+
+    buffer.writeln(
+      "Ordered: $ordered",
+    );
+
+    buffer.writeln(
+      "Received: $received",
+    );
+
+    buffer.writeln(
+      "Missing: $missing",
+    );
+
+    buffer.writeln(
+      "Status: "
+      "${confirmed ? "CONFIRMED" : "PENDING"}",
+    );
+
+    final note =
+        (item["adminNote"] ?? "")
+            .toString()
+            .trim();
+
+    if (note.isNotEmpty) {
+      buffer.writeln(
+        "Note: $note",
+      );
+    }
+
+    buffer.writeln("");
+  }
+
+  /////////////////////////////////////////////////////////
+  /// FINAL STATUS
+  /////////////////////////////////////////////////////////
+
+  buffer.writeln(
+    "━━━━━━━━━━━━━━━━━━━━",
+  );
+
+  if (_confirmedCount ==
+      _totalProductLines) {
+    buffer.writeln(
+      "✅ PACKING COMPLETED",
+    );
+  } else {
+    buffer.writeln(
+      "⏳ PACKING PENDING",
+    );
+  }
+
+  buffer.writeln("");
+
+  buffer.writeln(
+    "Received + Missing = "
+    "$_receivedItems + $_missingItems",
+  );
+
+  buffer.writeln(
+    "Ordered = $_totalItems",
+  );
+
+  return buffer.toString().trim();
+}
+///////////////////////////////////////////////////////////
+/// SEND FULL PACKING REPORT
+///////////////////////////////////////////////////////////
+
+Future<void> _sendFullPackingReport() async {
+  if (_items.isEmpty) {
+    _showError(
+      "There are no packing items to send.",
+    );
+    return;
+  }
+
+  if (_isSaving) {
+    return;
+  }
+
+  setState(() {
+    _isSaving = true;
+  });
+
+  try {
+    final report =
+        _buildFullPackingReport();
+
+    await AdminChatService.instance
+        .sendMessage(
+      orderId: widget.orderId,
+      text: report,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showSuccess(
+      "Full packing report sent to customer.",
+    );
+  } catch (e) {
+    if (!mounted) {
+      return;
+    }
+
+    _showError(
+      "Failed to send packing report: $e",
+    );
+
+    debugPrint(
+      "Packing report error: $e",
+    );
+  } finally {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = false;
+    });
+  }
+}
   TextEditingController _codeController(
     int index,
     String value,
@@ -3564,7 +3774,49 @@ String _formatDateTime(
                           ///////////////////////////////////////////////////
 
                           _buildSummary(),
+///////////////////////////////////////////////////////////
+/// SEND FULL REPORT BUTTON
+///////////////////////////////////////////////////////////
 
+Container(
+  width: double.infinity,
+  margin: const EdgeInsets.only(
+    top: 14,
+    bottom: 16,
+  ),
+  child: ElevatedButton.icon(
+    onPressed: _isSaving
+        ? null
+        : _sendFullPackingReport,
+    icon: Icon(
+      _isSaving
+          ? Icons.hourglass_top_rounded
+          : Icons.send_rounded,
+    ),
+    label: Text(
+      _isSaving
+          ? "Sending Report..."
+          : "Send Full Packing Report",
+    ),
+    style: ElevatedButton.styleFrom(
+      backgroundColor:
+          const Color(0xff241B2F),
+      foregroundColor:
+          Colors.white,
+      elevation: 0,
+      padding:
+          const EdgeInsets.symmetric(
+        vertical: 15,
+        horizontal: 18,
+      ),
+      shape:
+          RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(14),
+      ),
+    ),
+  ),
+),
                           ///////////////////////////////////////////////////
                           /// ITEMS
                           ///////////////////////////////////////////////////

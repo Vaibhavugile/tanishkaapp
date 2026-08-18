@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin_payment_screen.dart';
 import 'admin_packing_screen.dart';
+import 'admin_shipment_screen.dart';
 enum AdminMessageType {
   text,
   payment,
@@ -2167,22 +2168,29 @@ void _showMessageTypePicker() {
             /// SHIPMENT
             //////////////////////////////////////////////////
 
-            _messageTypeTile(
-              icon:
-                  Icons.local_shipping_outlined,
-              title: "Shipment",
-              subtitle:
-                  "Send shipment information",
-              type: AdminMessageType.shipment,
-              color: Colors.deepPurple,
-              onTap: () {
-                Navigator.pop(sheetContext);
+            ////////////////////////////////////////////////////////////
+/// SHIPMENT
+////////////////////////////////////////////////////////////
 
-                _selectMessageType(
-                  AdminMessageType.shipment,
-                );
-              },
-            ),
+_messageTypeTile(
+  icon: Icons.local_shipping_outlined,
+  title: "Shipment",
+  subtitle: "Send shipment information",
+  type: AdminMessageType.shipment,
+  color: Colors.deepPurple,
+  onTap: () {
+    Navigator.pop(sheetContext);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminShipmentScreen(
+          orderId: widget.orderId,
+        ),
+      ),
+    );
+  },
+),
 
             //////////////////////////////////////////////////
             /// TRACKING

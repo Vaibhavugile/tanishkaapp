@@ -649,6 +649,18 @@ Widget buildMessageBubble(
   }
 
   /////////////////////////////////////////////////////////
+  /// SHIPMENT
+  /////////////////////////////////////////////////////////
+
+  if (message.isShipment) {
+    final shipment = message.shipmentData ?? {};
+
+    if (shipment["reportType"] == "shipment") {
+      return _buildShipmentCard(message);
+    }
+  }
+
+  /////////////////////////////////////////////////////////
   /// NORMAL MESSAGE
   /////////////////////////////////////////////////////////
 
@@ -705,6 +717,265 @@ Widget buildMessageBubble(
     ),
   );
 }
+///////////////////////////////////////////////////////////
+/// SHIPMENT CARD
+///////////////////////////////////////////////////////////
+
+Widget _buildShipmentCard(
+  ChatMessageModel message,
+) {
+  final shipment = message.shipmentData ?? {};
+
+  final shipmentId =
+      (shipment["shipmentId"] ?? "").toString().trim();
+
+  final status =
+      (shipment["status"] ?? "shipped").toString();
+
+  final rawImages = shipment["packageImages"];
+  final images = <String>[];
+
+  if (rawImages is List) {
+    for (final item in rawImages) {
+      final url = item.toString().trim();
+      if (url.isNotEmpty) images.add(url);
+    }
+  }
+
+  final photoCount = images.isNotEmpty
+      ? images.length
+      : _toInt(shipment["photoCount"]);
+
+  return Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 18),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(
+        color: const Color(0xffE6DCE2),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(.055),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xffDCC8E7),
+                      Color(0xff7B3F98),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.local_shipping_rounded,
+                  color: Colors.white,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 11),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Shipment",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xff44212E),
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      "Your order has been shipped",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff9B7B85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xffE8F5E9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xff2E7D32),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xffFAF6FC),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 20,
+                  color: Color(0xff7B3F98),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "SHIPMENT ID",
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: .5,
+                          color: Color(0xff9B7B85),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        shipmentId.isEmpty
+                            ? "Not available"
+                            : shipmentId,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xff44212E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (images.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(
+                  Icons.photo_library_outlined,
+                  size: 17,
+                  color: Color(0xff7B3F98),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "$photoCount package photo"
+                  "${photoCount == 1 ? '' : 's'}",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xff44212E),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            SizedBox(
+              height: 105,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: 9),
+                itemBuilder: (context, index) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(
+                      images[index],
+                      width: 105,
+                      height: 105,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          Container(
+                        width: 105,
+                        height: 105,
+                        color: const Color(0xffF7F2F5),
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 15),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: Color(0xff2E7D32),
+              ),
+              const SizedBox(width: 7),
+              const Expanded(
+                child: Text(
+                  "Shipment dispatched",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xff44212E),
+                  ),
+                ),
+              ),
+              if (photoCount > 0)
+                Text(
+                  "$photoCount photo"
+                  "${photoCount == 1 ? '' : 's'}",
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xff9B7B85),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 ///////////////////////////////////////////////////////////
 /// PACKING REPORT CARD
 ///////////////////////////////////////////////////////////
@@ -1997,10 +2268,6 @@ int _toInt(
       ),
     );
   }
-///////////////////////////////////////////////////////////
-/// OPEN FULL PACKING REPORT
-///////////////////////////////////////////////////////////
-
 ///////////////////////////////////////////////////////////
 /// OPEN FULL PACKING REPORT
 ///////////////////////////////////////////////////////////

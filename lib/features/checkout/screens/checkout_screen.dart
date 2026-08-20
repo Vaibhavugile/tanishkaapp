@@ -12,6 +12,7 @@ import '../../../models/address_model.dart';
 import '../widgets/coupon_section.dart';
 import '../widgets/order_notes_section.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../services/address_service.dart';
 
 import '../../orders/screens/order_success_screen.dart';
 class CheckoutScreen extends StatefulWidget {
@@ -50,6 +51,28 @@ class _CheckoutScreenState
   setState(() {
     _selectedAddress = address;
   });
+}
+@override
+void initState() {
+  super.initState();
+
+  _loadDefaultAddress();
+}
+Future<void> _loadDefaultAddress() async {
+  try {
+    final address =
+        await AddressService.instance.getDefaultAddress();
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedAddress = address;
+    });
+  } catch (e) {
+    debugPrint(
+      "❌ Error loading default address: $e",
+    );
+  }
 }
 Map<String, dynamic> _buildOrderData() {
   final cart = Provider.of<CartProvider>(

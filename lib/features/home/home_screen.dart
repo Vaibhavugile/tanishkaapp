@@ -118,13 +118,9 @@ Future<void> _initialize() async {
                 ),
 
                 /// Banner
-                const SliverToBoxAdapter(
-                  child: HomeBanner(),
-                ),
+               
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 35),
-                ),
+                
 
                 /// Latest Products
                 SliverToBoxAdapter(

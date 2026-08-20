@@ -97,6 +97,32 @@ class AdminService {
       "lastLoginAt": Timestamp.now(),
     });
   }
+  /// =====================================================
+/// Get All Admins
+/// =====================================================
+
+Future<List<AdminModel>> getAdmins() async {
+  try {
+    final snapshot = await _firestore
+        .collection("admins")
+        .orderBy(
+          "createdAt",
+          descending: true,
+        )
+        .get();
+
+    return snapshot.docs
+        .map(
+          (doc) => AdminModel.fromMap(
+            doc.id,
+            doc.data(),
+          ),
+        )
+        .toList();
+  } catch (e) {
+    rethrow;
+  }
+}
 
   /// =====================================================
   /// Active Check

@@ -70,117 +70,143 @@ Future<void> _continue(BuildContext context) async {
             children: [
               const SparkleBackground(),
 
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-                child: Column(
-                  children: [
-                    const Spacer(),
+             Padding(
+  padding: const EdgeInsets.symmetric(
+    horizontal: 28,
+    vertical: 20,
+  ),
+  child: SingleChildScrollView(
+    physics: const BouncingScrollPhysics(),
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight:
+            MediaQuery.of(context).size.height -
+            MediaQuery.of(context).padding.top -
+            MediaQuery.of(context).padding.bottom -
+            40,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
 
-                    // Logo Glow
-                    Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xffD79AB1).withOpacity(.25),
-                            blurRadius: 80,
-                            spreadRadius: 20,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          "assets/logos/logo.png",
-                          width: 170,
-                        ),
-                      ),
-                    ),
+          // Logo Glow
+          Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xffD79AB1,
+                  ).withOpacity(.25),
+                  blurRadius: 80,
+                  spreadRadius: 20,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Image.asset(
+                "assets/logos/logo.png",
+                width: 170,
+              ),
+            ),
+          ),
 
-                    const SizedBox(height: 25),
+          const SizedBox(height: 25),
 
-                    const BrandTitle(),
+          const BrandTitle(),
 
-                    const SizedBox(height: 30),
+          const SizedBox(height: 30),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: const Color(0xffE3C77A),
-                          ),
-                        ),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Icon(
-                            Icons.diamond_outlined,
-                            color: Color(0xffD4AF37),
-                            size: 22,
-                          ),
-                        ),
-
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: const Color(0xffE3C77A),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 35),
-
-                    const Text(
-                      "Discover Timeless Luxury",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 31,
-                        height: 1.2,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff4F2C37),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18),
-                      child: Text(
-                        "Explore handcrafted jewellery collections inspired by elegance, tradition and everlasting beauty.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.7,
-                          color: Color(0xff7E6A71),
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                   LuxuryButton(
-  onTap: () => _continue(context),
-),
-                    const SizedBox(height: 15),
-
-                    const Text(
-                      "Experience Luxury",
-                      style: TextStyle(
-                        letterSpacing: 2,
-                        color: Color(0xff9B7B85),
-                        fontSize: 13,
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-                  ],
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 1,
+                  color: const Color(
+                    0xffE3C77A,
+                  ),
                 ),
               ),
+
+              const Padding(
+                padding:
+                    EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
+                child: Icon(
+                  Icons.diamond_outlined,
+                  color: Color(0xffD4AF37),
+                  size: 22,
+                ),
+              ),
+
+              Expanded(
+                child: Container(
+                  height: 1,
+                  color: const Color(
+                    0xffE3C77A,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 35),
+
+          const Text(
+            "Discover Timeless Luxury",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 31,
+              height: 1.2,
+              fontWeight: FontWeight.w700,
+              color: Color(0xff4F2C37),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          const Padding(
+            padding:
+                EdgeInsets.symmetric(
+              horizontal: 18,
+            ),
+            child: Text(
+              "Explore handcrafted jewellery collections inspired by elegance, tradition and everlasting beauty.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.7,
+                color: Color(0xff7E6A71),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          LuxuryButton(
+            onTap: () => _continue(context),
+          ),
+
+          const SizedBox(height: 15),
+
+          const Text(
+            "Experience Luxury",
+            style: TextStyle(
+              letterSpacing: 2,
+              color: Color(0xff9B7B85),
+              fontSize: 13,
+            ),
+          ),
+
+          const SizedBox(height: 25),
+        ],
+      ),
+    ),
+  ),
+),
             ],
           ),
         ),

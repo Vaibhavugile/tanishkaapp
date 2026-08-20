@@ -6,7 +6,7 @@ import '../widgets/cart_bottom_bar.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/empty_cart.dart';
 import '../../checkout/screens/checkout_screen.dart';
-
+import '../../home/home_screen.dart';
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
@@ -89,8 +89,16 @@ class CartScreen extends StatelessWidget {
                             borderRadius:
                                 BorderRadius.circular(
                                     16),
-                            onTap: () =>
-                                Navigator.pop(context),
+                           
+                                onTap: () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const HomeScreen(),
+    ),
+    (route) => false,
+  );
+},
                             child: Container(
                               width: 48,
                               height: 48,

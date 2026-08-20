@@ -13,108 +13,153 @@ class CategorySection extends StatefulWidget {
   });
 
   @override
-  State<CategorySection> createState() => _CategorySectionState();
+  State<CategorySection> createState() =>
+      _CategorySectionState();
 }
 
-class _CategorySectionState extends State<CategorySection> {
-  final CategoryService _service = CategoryService();
+class _CategorySectionState
+    extends State<CategorySection> {
+  final CategoryService _service =
+      CategoryService();
 
-  String selectedId = "all";
+  ///////////////////////////////////////////////////////////
+  /// SELECTED CATEGORY
+  ///////////////////////////////////////////////////////////
+
+  String? selectedId;
+
+  ///////////////////////////////////////////////////////////
+  /// FIRST CATEGORY LOADED
+  ///
+  /// Prevents StreamBuilder from repeatedly selecting
+  /// the first category whenever the stream updates.
+  ///////////////////////////////////////////////////////////
+
+  bool _firstCategoryLoaded = false;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
 
+        /////////////////////////////////////////////////////////
         /// HEADER
+        /////////////////////////////////////////////////////////
+
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 22,
+          ),
           child: Row(
             children: [
 
               Container(
                 width: 5,
                 height: 30,
-                decoration: BoxDecoration(
-                  color: const Color(0xffD81B78),
-                  borderRadius: BorderRadius.circular(20),
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(0xffD81B78),
+                  borderRadius:
+                      BorderRadius.circular(
+                    20,
+                  ),
                 ),
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(
+                width: 12,
+              ),
 
               const Expanded(
                 child: Text(
                   "Shop by Category",
                   style: TextStyle(
                     fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xff2C2C2C),
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        Color(0xff2C2C2C),
                     letterSpacing: -.5,
                   ),
                 ),
               ),
 
-              InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {},
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffFFF1F7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "View All",
-                    style: TextStyle(
-                      color: Color(0xffD81B78),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              ///////////////////////////////////////////////////
+              /// NO "VIEW ALL"
+              ///////////////////////////////////////////////////
             ],
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(
+          height: 20,
+        ),
+
+        /////////////////////////////////////////////////////////
+        /// CATEGORIES
+        /////////////////////////////////////////////////////////
 
         SizedBox(
           height: 150,
-          child: StreamBuilder<List<CategoryModel>>(
-            stream: _service.getCategories(),
-            builder: (context, snapshot) {
+          child:
+              StreamBuilder<
+                  List<CategoryModel>>(
+            stream:
+                _service.getCategories(),
 
-              if (snapshot.connectionState ==
+            builder:
+                (context, snapshot) {
+
+              ///////////////////////////////////////////////////
+              /// LOADING
+              ///////////////////////////////////////////////////
+
+              if (snapshot
+                      .connectionState ==
                   ConnectionState.waiting) {
                 return const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xffD81B78),
+                  child:
+                      CircularProgressIndicator(
+                    color:
+                        Color(0xffD81B78),
                   ),
                 );
               }
 
+              ///////////////////////////////////////////////////
+              /// ERROR
+              ///////////////////////////////////////////////////
+
               if (snapshot.hasError) {
                 return Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment:
+                        MainAxisAlignment
+                            .center,
                     children: const [
 
                       Icon(
-                        Icons.cloud_off_rounded,
+                        Icons
+                            .cloud_off_rounded,
                         size: 42,
-                        color: Color(0xffD81B78),
+                        color:
+                            Color(
+                          0xffD81B78,
+                        ),
                       ),
 
-                      SizedBox(height: 10),
+                      SizedBox(
+                        height: 10,
+                      ),
 
                       Text(
                         "Unable to load categories",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                        style:
+                            TextStyle(
+                          fontWeight:
+                              FontWeight.w600,
                         ),
                       ),
                     ],
@@ -122,58 +167,128 @@ class _CategorySectionState extends State<CategorySection> {
                 );
               }
 
-              final categories = snapshot.data ?? [];
+              ///////////////////////////////////////////////////
+              /// DATA
+              ///////////////////////////////////////////////////
+
+              final categories =
+                  snapshot.data ?? [];
+
+              ///////////////////////////////////////////////////
+              /// EMPTY
+              ///////////////////////////////////////////////////
 
               if (categories.isEmpty) {
                 return const Center(
                   child: Text(
                     "No Categories Found",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style:
+                        TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
                 );
               }
 
-              return ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: categories.length + 1,
-                itemBuilder: (context, index) {
+              ///////////////////////////////////////////////////
+              /// AUTOMATICALLY SELECT FIRST CATEGORY
+              ///////////////////////////////////////////////////
 
-                  if (index == 0) {
-                    return CategoryCard(
-                      category: const CategoryModel(
-                        id: "all",
-                        title: "All",
-                        image: "",
-                        showNumber: 0,
-                      ),
-                      isSelected: selectedId == "all",
-                      onTap: () {
-                        setState(() {
-                          selectedId = "all";
-                        });
+              if (!_firstCategoryLoaded) {
+                _firstCategoryLoaded =
+                    true;
 
-                        widget.onCategorySelected(null);
-                      },
+                final firstCategory =
+                    categories.first;
+
+                selectedId =
+                    firstCategory.id;
+
+                ///////////////////////////////////////////////////
+                /// Notify parent.
+                ///
+                /// This causes AllProductsScreen to load
+                /// the first indexed category.
+                ///////////////////////////////////////////////////
+
+                WidgetsBinding.instance
+                    .addPostFrameCallback(
+                  (_) {
+                    if (!mounted) {
+                      return;
+                    }
+
+                    widget
+                        .onCategorySelected(
+                      firstCategory,
                     );
-                  }
+                  },
+                );
+              }
 
-                  final category = categories[index - 1];
+              ///////////////////////////////////////////////////
+              /// CATEGORY LIST
+              ///////////////////////////////////////////////////
+
+              return ListView.builder(
+                physics:
+                    const BouncingScrollPhysics(),
+
+                scrollDirection:
+                    Axis.horizontal,
+
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+
+                ///////////////////////////////////////////////////
+                /// NO +1
+                ///
+                /// Because "All" was removed.
+                ///////////////////////////////////////////////////
+
+                itemCount:
+                    categories.length,
+
+                itemBuilder:
+                    (context, index) {
+
+                  ///////////////////////////////////////////////////
+                  /// FIRST FIRESTORE CATEGORY IS INDEX 0
+                  ///////////////////////////////////////////////////
+
+                  final category =
+                      categories[index];
 
                   return CategoryCard(
-                    category: category,
+                    category:
+                        category,
+
                     isSelected:
-                        selectedId == category.id,
+                        selectedId ==
+                            category.id,
+
                     onTap: () {
+
+                      ///////////////////////////////////////////////////
+                      /// SELECT CATEGORY
+                      ///////////////////////////////////////////////////
+
                       setState(() {
-                        selectedId = category.id;
+                        selectedId =
+                            category.id;
                       });
 
-                      widget.onCategorySelected(category);
+                      ///////////////////////////////////////////////////
+                      /// LOAD SELECTED CATEGORY
+                      ///////////////////////////////////////////////////
+
+                      widget
+                          .onCategorySelected(
+                        category,
+                      );
                     },
                   );
                 },

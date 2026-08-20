@@ -82,180 +82,250 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   // LOAD FIRST PAGE
   //----------------------------------------------------------
 
-  Future<void> _loadInitialProducts() async {
-    setState(() {
-      _isLoading = true;
-
-      _products.clear();
-
-      _lastAppProductDocument = null;
-      _lastProductDocument = null;
-
-      _loadingAppProducts = true;
-      _hasMore = true;
-    });
-
-    try {
-      final result = await _service.getProductsPage(
-        categoryId: _selectedCategory,
-        loadAppProducts: true,
-        startAfter: null,
-        limit: _pageSize,
-      );
-
-      if (!mounted) return;
-
-     setState(() {
-  _products.addAll(result.products);
-
-  _lastAppProductDocument = result.lastDocument;
-
-  _loadingAppProducts =
-      !result.appProductsCompleted;
-
-  _hasMore =
-      result.products.length == _pageSize ||
-      !result.appProductsCompleted;
-});
-
-      // If there are no appProducts, immediately begin loading products.
-    if (result.appProductsCompleted) {
-  _loadingAppProducts = false;
-
-  final productResult = await _service.getProductsPage(
-    categoryId: _selectedCategory,
-    loadAppProducts: false,
-    startAfter: null,
-    limit: _pageSize,
-  );
-
-  if (!mounted) return;
-
+Future<void> _loadInitialProducts() async {
   setState(() {
-    _products.addAll(productResult.products);
+    _isLoading = true;
 
-    _lastProductDocument = productResult.lastDocument;
+    _products.clear();
 
-    _hasMore =
-        productResult.products.length == _pageSize;
+    _lastAppProductDocument = null;
+    _lastProductDocument = null;
+
+    _loadingAppProducts = true;
+    _hasMore = true;
   });
-}
-    } catch (e) {
-      debugPrint(e.toString());
-    }
 
-    if (!mounted) return;
+  try {
+    ///////////////////////////////////////////////////////////
+    /// FIRST PAGE — APP PRODUCTS
+    ///////////////////////////////////////////////////////////
 
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  //----------------------------------------------------------
-  // LOAD MORE
-  //----------------------------------------------------------
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore) {
-      return;
-    }
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    try {
-      //------------------------------------------------------
-      // LOAD APP PRODUCTS
-      //------------------------------------------------------
-
-      if (_loadingAppProducts) {
-        final result = await _service.getProductsPage(
-          categoryId: _selectedCategory,
-          loadAppProducts: true,
-          startAfter: _lastAppProductDocument,
-          limit: _pageSize,
-        );
-
-        if (!mounted) return;
-
-        setState(() {
-          _products.addAll(result.products);
-
-          _lastAppProductDocument =
-              result.lastDocument;
-
-          if (result.appProductsCompleted) {
-            _loadingAppProducts = false;
-          }
-
-          _hasMore = true;
-        });
-
-        // Switch immediately to products if appProducts are finished.
-        if (result.appProductsCompleted) {
-  _loadingAppProducts = false;
-
-  // If this was the last appProducts page,
-  // immediately load the first products page.
-  if (result.products.length < _pageSize) {
-    final productResult = await _service.getProductsPage(
-      categoryId: _selectedCategory,
-      loadAppProducts: false,
-      startAfter: _lastProductDocument,
+    final appResult =
+        await _service.getProductsPage(
+      categoryId:
+          _selectedCategory,
+      loadAppProducts: true,
+      startAfter: null,
       limit: _pageSize,
     );
 
     if (!mounted) return;
 
     setState(() {
-      _products.addAll(productResult.products);
+      _products.addAll(
+        appResult.products,
+      );
 
-      _lastProductDocument =
-          productResult.lastDocument;
+      _lastAppProductDocument =
+          appResult.lastDocument;
+
+      /////////////////////////////////////////////////////////
+      /// APP PRODUCTS STILL HAVE MORE
+      /////////////////////////////////////////////////////////
+
+      _loadingAppProducts =
+          appResult.hasMore;
 
       _hasMore =
-          productResult.products.length == _pageSize;
+          appResult.hasMore;
     });
+
+    ///////////////////////////////////////////////////////////
+    /// APP PRODUCTS FINISHED
+    ///
+    /// Immediately start PRODUCTS.
+    ///////////////////////////////////////////////////////////
+
+    if (!appResult.hasMore) {
+      final productResult =
+          await _service.getProductsPage(
+        categoryId:
+            _selectedCategory,
+        loadAppProducts: false,
+        startAfter: null,
+        limit: _pageSize,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _products.addAll(
+          productResult.products,
+        );
+
+        _lastProductDocument =
+            productResult.lastDocument;
+
+        _loadingAppProducts =
+            false;
+
+        _hasMore =
+            productResult.hasMore;
+      });
+    }
+  } catch (e, stack) {
+    debugPrint(
+      "❌ Failed to load products: $e",
+    );
+
+    debugPrint(
+      stack.toString(),
+    );
   }
+
+  if (!mounted) return;
+
+  setState(() {
+    _isLoading = false;
+  });
 }
+
+  //----------------------------------------------------------
+  // LOAD MORE
+  //----------------------------------------------------------
+Future<void> _loadMore() async {
+  if (_isLoadingMore ||
+      !_hasMore) {
+    return;
+  }
+
+  setState(() {
+    _isLoadingMore = true;
+  });
+
+  try {
+    ///////////////////////////////////////////////////////////
+    /// CURRENT COLLECTION
+    ///////////////////////////////////////////////////////////
+
+    final bool loadingApp =
+        _loadingAppProducts;
+
+    ///////////////////////////////////////////////////////////
+    /// CURRENT CURSOR
+    ///////////////////////////////////////////////////////////
+
+    final DocumentSnapshot?
+        currentCursor =
+        loadingApp
+            ? _lastAppProductDocument
+            : _lastProductDocument;
+
+    ///////////////////////////////////////////////////////////
+    /// LOAD NEXT PAGE
+    ///////////////////////////////////////////////////////////
+
+    final result =
+        await _service.getProductsPage(
+      categoryId:
+          _selectedCategory,
+      loadAppProducts:
+          loadingApp,
+      startAfter:
+          currentCursor,
+      limit:
+          _pageSize,
+    );
+
+    if (!mounted) return;
+
+    ///////////////////////////////////////////////////////////
+    /// ADD AVAILABLE PRODUCTS
+    ///////////////////////////////////////////////////////////
+
+    setState(() {
+      _products.addAll(
+        result.products,
+      );
+
+      /////////////////////////////////////////////////////////
+      /// UPDATE CORRECT CURSOR
+      /////////////////////////////////////////////////////////
+
+      if (loadingApp) {
+        _lastAppProductDocument =
+            result.lastDocument;
+      } else {
+        _lastProductDocument =
+            result.lastDocument;
       }
+    });
 
-      //------------------------------------------------------
-      // LOAD PRODUCTS
-      //------------------------------------------------------
+    ///////////////////////////////////////////////////////////
+    /// APP PRODUCTS
+    ///////////////////////////////////////////////////////////
 
-      else {
-        final result = await _service.getProductsPage(
-          categoryId: _selectedCategory,
+    if (loadingApp) {
+      if (result.hasMore) {
+        ///////////////////////////////////////////////////////
+        /// APP PRODUCTS STILL HAVE MORE
+        ///////////////////////////////////////////////////////
+
+        setState(() {
+          _loadingAppProducts = true;
+          _hasMore = true;
+        });
+      } else {
+        ///////////////////////////////////////////////////////
+        /// APP PRODUCTS FINISHED
+        ///
+        /// Switch to normal products.
+        ///////////////////////////////////////////////////////
+
+        final productResult =
+            await _service.getProductsPage(
+          categoryId:
+              _selectedCategory,
           loadAppProducts: false,
-          startAfter: _lastProductDocument,
+          startAfter: null,
           limit: _pageSize,
         );
 
         if (!mounted) return;
 
         setState(() {
-          _products.addAll(result.products);
+          _products.addAll(
+            productResult.products,
+          );
 
           _lastProductDocument =
-              result.lastDocument;
+              productResult.lastDocument;
+
+          _loadingAppProducts =
+              false;
 
           _hasMore =
-              result.products.length == _pageSize;
+              productResult.hasMore;
         });
       }
-    } catch (e) {
-      debugPrint(e.toString());
-    }
+    } else {
+      /////////////////////////////////////////////////////////
+      /// NORMAL PRODUCTS
+      /////////////////////////////////////////////////////////
 
+      setState(() {
+        _loadingAppProducts = false;
+
+        _hasMore =
+            result.hasMore;
+      });
+    }
+  } catch (e, stack) {
+    debugPrint(
+      "❌ Failed to load more products: $e",
+    );
+
+    debugPrint(
+      stack.toString(),
+    );
+  } finally {
     if (!mounted) return;
 
     setState(() {
       _isLoadingMore = false;
     });
   }
-
+}
   //----------------------------------------------------------
   // SCROLL LISTENER
   //----------------------------------------------------------

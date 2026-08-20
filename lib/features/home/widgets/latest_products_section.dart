@@ -242,7 +242,66 @@ class LatestProductsSection extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
+
+///////////////////////////////////////////////////////////
+/// BOTTOM VIEW ALL
+///////////////////////////////////////////////////////////
+
+Center(
+  child: Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(30),
+      onTap: onViewAll,
+      child: Ink(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 22,
+          vertical: 11,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: Theme.of(context)
+                .primaryColor
+                .withOpacity(.15),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "View All Products",
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+
+            const SizedBox(width: 7),
+
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: 17,
+              color: Theme.of(context).primaryColor,
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+),
+
+const SizedBox(height: 10),
             ],
           ),
         );

@@ -2,16 +2,90 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../auth/screens/login_screen.dart';
 import '../../../providers/cart_provider.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 class PremiumAppBar extends StatelessWidget {
   final VoidCallback? onMenuTap;
   final VoidCallback? onWishlistTap;
   final VoidCallback? onCartTap;
 
   final int wishlistCount;
+Future<void> _signOut(BuildContext context) async {
+  final shouldSignOut = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          "Sign Out?",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: const Text(
+          "Are you sure you want to sign out?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor:
+                  const Color(0xffD81B78),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext, true);
+            },
+            child: const Text("Sign Out"),
+          ),
+        ],
+      );
+    },
+  );
 
+  if (shouldSignOut != true) {
+    return;
+  }
+
+  try {
+    await FirebaseAuth.instance.signOut();
+
+    if (!context.mounted) return;
+
+    // Remove all previous screens and go to login.
+   Navigator.pushAndRemoveUntil(
+  context,
+  MaterialPageRoute(
+    builder: (_) => const LoginScreen(),
+  ),
+  (route) => false,
+);
+  } catch (e) {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          "Unable to sign out: $e",
+        ),
+      ),
+    );
+  }
+}
   const PremiumAppBar({
     super.key,
     this.onMenuTap,
@@ -100,9 +174,9 @@ class PremiumAppBar extends StatelessWidget {
                 const SizedBox(width: 10),
 
                 _LuxuryIcon(
-                  icon: Icons.grid_view_rounded,
-                  onTap: onMenuTap,
-                ),
+  icon: Icons.logout_rounded,
+  onTap: () => _signOut(context),
+),
               ],
             ),
           ),

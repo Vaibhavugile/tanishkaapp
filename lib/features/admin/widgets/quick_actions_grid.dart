@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'dashboard_tile.dart';
 import 'permission_gate.dart';
-
+import '../screens/admin_staff_screen.dart';
+import '../screens/verification_approval_screen.dart';
 class QuickActionsGrid extends StatelessWidget {
   ///////////////////////////////////////////////////////////
   /// CALLBACKS
@@ -96,63 +97,63 @@ class QuickActionsGrid extends StatelessWidget {
             /// CHATS
             ///////////////////////////////////////////////////
 
-            PermissionGate(
-              allow: (admin) =>
-                  admin.canChat,
+            // PermissionGate(
+            //   allow: (admin) =>
+            //       admin.canChat,
 
-              child: DashboardTile(
-                icon:
-                    Icons.chat_bubble_outline,
+            //   child: DashboardTile(
+            //     icon:
+            //         Icons.chat_bubble_outline,
 
-                title:
-                    "Chats",
+            //     title:
+            //         "Chats",
 
-                subtitle:
-                    "Customer conversations",
+            //     subtitle:
+            //         "Customer conversations",
 
-                badge:
-                    4,
+            //     badge:
+            //         4,
 
-                color:
-                    Colors.blue,
+            //     color:
+            //         Colors.blue,
 
-                onTap: () {
-                  // TODO:
-                  // Open Admin Chat workspace
-                },
-              ),
-            ),
+            //     onTap: () {
+            //       // TODO:
+            //       // Open Admin Chat workspace
+            //     },
+            //   ),
+            // ),
 
             ///////////////////////////////////////////////////
             /// PACKING
             ///////////////////////////////////////////////////
 
-            PermissionGate(
-              allow: (admin) =>
-                  admin.canPackOrders,
+            // PermissionGate(
+            //   allow: (admin) =>
+            //       admin.canPackOrders,
 
-              child: DashboardTile(
-                icon:
-                    Icons.inventory_2_outlined,
+            //   child: DashboardTile(
+            //     icon:
+            //         Icons.inventory_2_outlined,
 
-                title:
-                    "Packing",
+            //     title:
+            //         "Packing",
 
-                subtitle:
-                    "Packing workspace",
+            //     subtitle:
+            //         "Packing workspace",
 
-                badge:
-                    9,
+            //     badge:
+            //         9,
 
-                color:
-                    Colors.orange,
+            //     color:
+            //         Colors.orange,
 
-                onTap: () {
-                  // TODO:
-                  // Open Packing workspace
-                },
-              ),
-            ),
+            //     onTap: () {
+            //       // TODO:
+            //       // Open Packing workspace
+            //     },
+            //   ),
+            // ),
 
             ///////////////////////////////////////////////////
             /// PAYMENTS
@@ -167,7 +168,7 @@ class QuickActionsGrid extends StatelessWidget {
                     Icons.payments_outlined,
 
                 title:
-                    "Payments",
+                    "Scanners",
 
                 subtitle:
                     "Manage payment scanners",
@@ -187,85 +188,94 @@ class QuickActionsGrid extends StatelessWidget {
             /// SHIPPING
             ///////////////////////////////////////////////////
 
-            PermissionGate(
-              allow: (admin) =>
-                  admin.canShipOrders,
+            // PermissionGate(
+            //   allow: (admin) =>
+            //       admin.canShipOrders,
 
-              child: DashboardTile(
-                icon:
-                    Icons.local_shipping_outlined,
+            //   child: DashboardTile(
+            //     icon:
+            //         Icons.local_shipping_outlined,
 
-                title:
-                    "Shipping",
+            //     title:
+            //         "Shipping",
 
-                subtitle:
-                    "Dispatch orders",
+            //     subtitle:
+            //         "Dispatch orders",
 
-                color:
-                    Colors.deepPurple,
+            //     color:
+            //         Colors.deepPurple,
 
-                onTap: () {
-                  // TODO:
-                  // Open Shipping workspace
-                },
-              ),
-            ),
+            //     onTap: () {
+            //       // TODO:
+            //       // Open Shipping workspace
+            //     },
+            //   ),
+            // ),
 
             ///////////////////////////////////////////////////
             /// INVENTORY
             ///////////////////////////////////////////////////
 
-            PermissionGate(
-              allow: (admin) =>
-                  admin.canManageInventory,
+            // PermissionGate(
+            //   allow: (admin) =>
+            //       admin.canManageInventory,
 
-              child: DashboardTile(
-                icon:
-                    Icons.warehouse_outlined,
+            //   child: DashboardTile(
+            //     icon:
+            //         Icons.warehouse_outlined,
 
-                title:
-                    "Inventory",
+            //     title:
+            //         "Inventory",
 
-                subtitle:
-                    "Stock management",
+            //     subtitle:
+            //         "Stock management",
 
-                color:
-                    Colors.teal,
+            //     color:
+            //         Colors.teal,
 
-                onTap: () {
-                  // TODO:
-                  // Open Inventory workspace
-                },
-              ),
-            ),
+            //     onTap: () {
+            //       // TODO:
+            //       // Open Inventory workspace
+            //     },
+            //   ),
+            // ),
 
             ///////////////////////////////////////////////////
             /// REPORTS
             ///////////////////////////////////////////////////
 
-            PermissionGate(
-              allow: (admin) =>
-                  admin.canViewReports,
+            ///////////////////////////////////////////////////
+/// VERIFICATIONS
+///////////////////////////////////////////////////
 
-              child: DashboardTile(
-                icon:
-                    Icons.bar_chart_rounded,
+PermissionGate(
+  allow: (admin) =>
+      admin.canManageAdmins,
 
-                title:
-                    "Reports",
+  child: DashboardTile(
+    icon:
+        Icons.verified_user_outlined,
 
-                subtitle:
-                    "Business analytics",
+    title:
+        "Verifications",
 
-                color:
-                    Colors.indigo,
+    subtitle:
+        "Verify businesses",
 
-                onTap: () {
-                  // TODO:
-                  // Open Reports
-                },
-              ),
-            ),
+    color:
+        Colors.indigo,
+
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const VerificationApprovalScreen(),
+        ),
+      );
+    },
+  ),
+),
 
             ///////////////////////////////////////////////////
             /// STAFF
@@ -289,8 +299,12 @@ class QuickActionsGrid extends StatelessWidget {
                     Colors.pink,
 
                 onTap: () {
-                  // TODO:
-                  // Open Staff management
+                   Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const AdminStaffScreen(),
+    ),
+  );
                 },
               ),
             ),

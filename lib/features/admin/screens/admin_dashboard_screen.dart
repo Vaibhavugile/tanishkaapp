@@ -12,7 +12,8 @@ import '../widgets/recent_orders_widget.dart';
 import '../widgets/recent_activity_widget.dart';
 import '../payments/screens/admin_payment_methods_screen.dart';
 import '../orders/screens/order_list_screen.dart';
-
+import 'admin_staff_screen.dart';
+import '../../auth/screens/login_screen.dart';
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({
     super.key,
@@ -53,6 +54,7 @@ class _AdminDashboardScreenState
       _loading = false;
     });
   }
+  
 
   ///////////////////////////////////////////////////////////
   /// REFRESH
@@ -93,16 +95,38 @@ void _openPaymentMethods() {
   /// LOGOUT
   ///////////////////////////////////////////////////////////
 
-  Future<void> _logout() async {
+Future<void> _logout() async {
+  try {
+    // Sign out from Firebase
     await FirebaseAuth.instance.signOut();
+
+    // Clear current admin from AdminService
+    await AdminService.instance.refresh();
 
     if (!mounted) return;
 
-    Navigator.popUntil(
-      context,
-      (route) => route.isFirst,
+    // Completely remove the admin dashboard
+    // and open LoginScreen.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.red.shade600,
+        content: Text(
+          "Logout failed: $e",
+        ),
+      ),
     );
   }
+}
 
   ///////////////////////////////////////////////////////////
   /// BUILD
@@ -312,16 +336,16 @@ void _openPaymentMethods() {
                 /// RECENT ACTIVITY
                 //////////////////////////////////////////////////
 
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        EdgeInsets.symmetric(
-                      horizontal: 18,
-                    ),
-                    child:
-                        RecentActivityWidget(),
-                  ),
-                ),
+                // const SliverToBoxAdapter(
+                //   child: Padding(
+                //     padding:
+                //         EdgeInsets.symmetric(
+                //       horizontal: 18,
+                //     ),
+                //     child:
+                //         RecentActivityWidget(),
+                //   ),
+                // ),
 
                 //////////////////////////////////////////////////
                 /// BOTTOM SPACE

@@ -634,51 +634,52 @@ Future<void> approvePayment({
   /////////////////////////////////////////////////////////
 
   batch.update(
-    orderRef,
-    {
-      "paymentStatus":
-          "Paid",
+  orderRef,
+  {
+    "paymentStatus": "Paid",
+    "paymentStage": "Paid",
+    "orderStatus": "Paid",
 
-      "paymentVerifiedBy":
-          adminId,
+    "paymentVerifiedBy": adminId,
 
-      "paymentVerifiedAt":
-          FieldValue.serverTimestamp(),
-    },
-  );
+    "paymentVerifiedAt":
+        FieldValue.serverTimestamp(),
+
+    "updatedAt":
+        FieldValue.serverTimestamp(),
+  },
+);
 
   /////////////////////////////////////////////////////////
   /// 3. UPDATE CHAT SUMMARY
   /////////////////////////////////////////////////////////
 
   batch.update(
-    chatRef,
-    {
-      "lastMessage":
-          "Payment verified successfully",
+  chatRef,
+  {
+    "paymentStatus": "Paid",
+    "paymentStage": "Paid",
+    "orderStatus": "Paid",
 
-      "lastMessageType":
-          "payment",
+    "lastMessage":
+        "Payment verified successfully",
 
-      "lastSenderType":
-          "admin",
+    "lastMessageType": "payment",
+    "lastSenderType": "admin",
+    "lastSenderId": adminId,
 
-      "lastSenderId":
-          adminId,
+    "lastMessageTime":
+        FieldValue.serverTimestamp(),
 
-      "lastMessageTime":
-          FieldValue.serverTimestamp(),
+    "updatedAt":
+        FieldValue.serverTimestamp(),
 
-      "updatedAt":
-          FieldValue.serverTimestamp(),
+    "unreadCustomer":
+        FieldValue.increment(1),
 
-      "unreadCustomer":
-          FieldValue.increment(1),
-
-      "unreadAdmin":
-          0,
-    },
-  );
+    "unreadAdmin": 0,
+  },
+);
 
   /////////////////////////////////////////////////////////
   /// COMMIT
@@ -967,7 +968,6 @@ Future<void> sendPaymentRequest({
 /// The complete packing items are NOT copied into chat.
 /// The customer can open the full report separately.
 ///////////////////////////////////////////////////////////
-
 Future<void> sendPackingReport({
   required String orderId,
   required int totalItems,
@@ -976,35 +976,231 @@ Future<void> sendPackingReport({
   required int confirmedItems,
   required String status,
 }) async {
+  final now = FieldValue.serverTimestamp();
+
   final packingData = <String, dynamic>{
     "reportType": "packing_report",
-
     "orderId": orderId,
 
     "totalItems": totalItems,
-
     "receivedItems": receivedItems,
-
     "missingItems": missingItems,
-
     "confirmedItems": confirmedItems,
 
     "status": status,
 
-    "sentAt":
-        FieldValue.serverTimestamp(),
-
+    "sentAt": now,
     "sentBy": _adminId,
   };
 
-  await _sendAdminMessage(
-    orderId: orderId,
+  ///////////////////////////////////////////////////////////
+  /// REFERENCES
+  ///////////////////////////////////////////////////////////
 
-    type: "packing",
+  final orderRef = _firestore
+      .collection("orders")
+      .doc(orderId);
 
-    text: "📦 Packing Report",
+  ///////////////////////////////////////////////////////////
+  /// CREATE PACKING MESSAGE
+  ///////////////////////////////////////////////////////////
 
-    packingData: packingData,
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final messageRef = chatRef
+      .collection("messages")
+      .doc();
+
+  final batch = _firestore.batch();
+
+  ///////////////////////////////////////////////////////////
+  /// MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  batch.set(
+    messageRef,
+    {
+      "senderId": _adminId,
+      "senderType": "admin",
+      "type": "packing",
+
+      "text": "📦 Packing Report",
+
+      "image": "",
+      "pdf": "",
+
+      "orderId": orderId,
+
+      "packingData": packingData,
+
+      "createdAt": now,
+    },
   );
+
+  ///////////////////////////////////////////////////////////
+  /// UPDATE ORDER STATUS
+  ///////////////////////////////////////////////////////////
+
+  batch.update(
+    orderRef,
+    {
+      "orderStatus": "Packed",
+
+      "packingStatus": "Packed",
+      "packingStage": "Packed",
+
+      "packedBy": _adminId,
+      "packedAt": now,
+
+      "updatedAt": now,
+    },
+  );
+
+  ///////////////////////////////////////////////////////////
+  /// UPDATE CHAT SUMMARY
+  ///////////////////////////////////////////////////////////
+
+  batch.update(
+  chatRef,
+  {
+    "orderStatus": "Packed",
+    "packingStatus": "Packed",
+    "packingStage": "Packed",
+
+    "lastMessage": "📦 Packing Report",
+    "lastMessageType": "packing",
+    "lastSenderType": "admin",
+    "lastSenderId": _adminId,
+
+    "lastMessageTime": now,
+    "updatedAt": now,
+
+    "unreadCustomer":
+        FieldValue.increment(1),
+
+    "unreadAdmin": 0,
+  },
+);
+
+  ///////////////////////////////////////////////////////////
+  /// COMMIT EVERYTHING TOGETHER
+  ///////////////////////////////////////////////////////////
+
+  await batch.commit();
+}
+Future<void> sendShipmentReport({
+  required String orderId,
+  required Map<String, dynamic> shipmentData,
+}) async {
+  final now = FieldValue.serverTimestamp();
+
+  ///////////////////////////////////////////////////////////
+  /// REFERENCES
+  ///////////////////////////////////////////////////////////
+
+  final orderRef = _firestore
+      .collection("orders")
+      .doc(orderId);
+
+  final chatRef = _firestore
+      .collection("orderChats")
+      .doc(orderId);
+
+  final messageRef = chatRef
+      .collection("messages")
+      .doc();
+
+  ///////////////////////////////////////////////////////////
+  /// SHIPMENT DATA
+  ///////////////////////////////////////////////////////////
+
+  final data = <String, dynamic>{
+    ...shipmentData,
+
+    "orderId": orderId,
+    "sentAt": now,
+    "sentBy": _adminId,
+  };
+
+  final batch = _firestore.batch();
+
+  ///////////////////////////////////////////////////////////
+  /// SHIPMENT MESSAGE
+  ///////////////////////////////////////////////////////////
+
+  batch.set(
+    messageRef,
+    {
+      "senderId": _adminId,
+      "senderType": "admin",
+      "type": "shipment",
+
+      "text": "🚚 Shipment Dispatched",
+
+      "image": "",
+      "pdf": "",
+
+      "orderId": orderId,
+
+      "shipmentData": data,
+
+      "createdAt": now,
+    },
+  );
+
+  ///////////////////////////////////////////////////////////
+  /// UPDATE ORDER
+  ///////////////////////////////////////////////////////////
+
+  batch.update(
+    orderRef,
+    {
+      "orderStatus": "Shipped",
+
+      "shipmentStatus": "Shipped",
+      "shipmentStage": "Shipped",
+
+      "shippedBy": _adminId,
+      "shippedAt": now,
+
+      "updatedAt": now,
+    },
+  );
+
+  ///////////////////////////////////////////////////////////
+  /// UPDATE CHAT
+  ///////////////////////////////////////////////////////////
+
+ batch.update(
+  chatRef,
+  {
+    "orderStatus": "Shipped",
+    "shipmentStatus": "Shipped",
+    "shipmentStage": "Shipped",
+
+    "lastMessage":
+        "🚚 Shipment Dispatched",
+
+    "lastMessageType": "shipment",
+    "lastSenderType": "admin",
+    "lastSenderId": _adminId,
+
+    "lastMessageTime": now,
+    "updatedAt": now,
+
+    "unreadCustomer":
+        FieldValue.increment(1),
+
+    "unreadAdmin": 0,
+  },
+);
+
+  ///////////////////////////////////////////////////////////
+  /// COMMIT
+  ///////////////////////////////////////////////////////////
+
+  await batch.commit();
 }
 }

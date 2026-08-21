@@ -751,138 +751,143 @@ class _OrderListScreenState
                   const BouncingScrollPhysics(),
               children: [
 
-                _filterChip(
-                  "All",
-                  selected:
-                      !_hasStatusFilter,
-                  onTap: () {
-                    setState(() {
-                      _selectedOrderStatus =
-                          "All";
-                      _selectedPaymentStatus =
-                          "All";
-                      _unreadOnly =
-                          false;
-                    });
-                  },
-                ),
+  // =========================================================
+  // ALL
+  // =========================================================
 
-                const SizedBox(
-                  width: 8,
-                ),
+  _filterChip(
+    "All",
+    selected: !_hasStatusFilter,
+    onTap: () {
+      setState(() {
+        _selectedOrderStatus = "All";
+        _selectedPaymentStatus = "All";
+        _unreadOnly = false;
+      });
+    },
+  ),
 
-                _filterChip(
-                  "Unread",
-                  selected:
-                      _unreadOnly,
-                  icon: Icons
-                      .mark_chat_unread_outlined,
-                  onTap: () {
-                    setState(() {
-                      _unreadOnly =
-                          !_unreadOnly;
-                    });
-                  },
-                ),
+  const SizedBox(width: 8),
 
-                const SizedBox(
-                  width: 8,
-                ),
+  // =========================================================
+  // UNREAD
+  // =========================================================
 
-                _filterChip(
-                  "Placed",
-                  selected:
-                      _selectedOrderStatus ==
-                          "Placed",
-                  onTap: () {
-                    _selectOrderStatus(
-                      "Placed",
-                    );
-                  },
-                ),
+  _filterChip(
+    "Unread",
+    selected: _unreadOnly,
+    icon: Icons.mark_chat_unread_outlined,
+    onTap: () {
+      setState(() {
+        _unreadOnly = !_unreadOnly;
+      });
+    },
+  ),
 
-                const SizedBox(
-                  width: 8,
-                ),
+  const SizedBox(width: 8),
 
-                _filterChip(
-                  "Packing",
-                  selected:
-                      _selectedOrderStatus ==
-                          "Packing",
-                  onTap: () {
-                    _selectOrderStatus(
-                      "Packing",
-                    );
-                  },
-                ),
+  // =========================================================
+  // PLACED
+  // =========================================================
 
-                const SizedBox(
-                  width: 8,
-                ),
+  _filterChip(
+    "Placed",
+    selected: _selectedOrderStatus == "Placed",
+    onTap: () {
+      _selectOrderStatus("Placed");
+    },
+  ),
 
-                _filterChip(
-                  "Shipped",
-                  selected:
-                      _selectedOrderStatus ==
-                          "Shipped",
-                  onTap: () {
-                    _selectOrderStatus(
-                      "Shipped",
-                    );
-                  },
-                ),
+  const SizedBox(width: 8),
 
-                const SizedBox(
-                  width: 8,
-                ),
+  // =========================================================
+  // PAID
+  // =========================================================
 
-                _filterChip(
-                  "Delivered",
-                  selected:
-                      _selectedOrderStatus ==
-                          "Delivered",
-                  onTap: () {
-                    _selectOrderStatus(
-                      "Delivered",
-                    );
-                  },
-                ),
+  _filterChip(
+    "Paid",
+    selected: _selectedOrderStatus == "Paid",
+    icon: Icons.check_circle_outline,
+    onTap: () {
+      _selectOrderStatus("Paid");
+    },
+  ),
 
-                const SizedBox(
-                  width: 8,
-                ),
+  const SizedBox(width: 8),
 
-                _filterChip(
-                  "Cancelled",
-                  selected:
-                      _selectedOrderStatus ==
-                          "Cancelled",
-                  onTap: () {
-                    _selectOrderStatus(
-                      "Cancelled",
-                    );
-                  },
-                ),
+  // =========================================================
+  // PACKED
+  // =========================================================
 
-                const SizedBox(
-                  width: 8,
-                ),
+  _filterChip(
+    "Packed",
+    selected: _selectedOrderStatus == "Packed",
+    icon: Icons.inventory_2_outlined,
+    onTap: () {
+      _selectOrderStatus("Packed");
+    },
+  ),
 
-                _filterChip(
-                  "Payment Pending",
-                  icon:
-                      Icons.payments_outlined,
-                  selected:
-                      _selectedPaymentStatus ==
-                          "Pending",
-                  onTap: () {
-                    _selectPaymentStatus(
-                      "Pending",
-                    );
-                  },
-                ),
-              ],
+  const SizedBox(width: 8),
+
+  // =========================================================
+  // SHIPPED
+  // =========================================================
+
+  _filterChip(
+    "Shipped",
+    selected: _selectedOrderStatus == "Shipped",
+    icon: Icons.local_shipping_outlined,
+    onTap: () {
+      _selectOrderStatus("Shipped");
+    },
+  ),
+
+  const SizedBox(width: 8),
+
+  // =========================================================
+  // DELIVERED
+  // =========================================================
+
+  _filterChip(
+    "Delivered",
+    selected: _selectedOrderStatus == "Delivered",
+    icon: Icons.done_all_rounded,
+    onTap: () {
+      _selectOrderStatus("Delivered");
+    },
+  ),
+
+  const SizedBox(width: 8),
+
+  // =========================================================
+  // CANCELLED
+  // =========================================================
+
+  _filterChip(
+    "Cancelled",
+    selected: _selectedOrderStatus == "Cancelled",
+    icon: Icons.cancel_outlined,
+    onTap: () {
+      _selectOrderStatus("Cancelled");
+    },
+  ),
+
+  const SizedBox(width: 8),
+
+  // =========================================================
+  // PAYMENT PENDING
+  // =========================================================
+
+  _filterChip(
+    "Payment Pending",
+    icon: Icons.payments_outlined,
+    selected: _selectedPaymentStatus == "Pending",
+    onTap: () {
+      _selectPaymentStatus("Pending");
+    },
+  ),
+],
             ),
           ),
         ],

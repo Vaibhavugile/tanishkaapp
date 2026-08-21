@@ -249,27 +249,30 @@ Future<void> _saveShipment({
   /////////////////////////////////////////////////////////
 
   await _firestore
-      .collection("orders")
-      .doc(orderId)
-      .update({
-    "shipmentId":
-        shipmentId,
+    .collection("orders")
+    .doc(orderId)
+    .update({
+  // Shipment
+  "shipmentId": shipmentId,
+  "shipmentStatus": "Shipped",
+  "shipmentStage": "Shipped",
 
-    "shipmentStatus":
-        "Shipped",
+  // Main order status
+  "orderStatus": "Shipped",
 
-    "shipmentPhotoUrls":
-        photoUrls,
+  // Photos
+  "shipmentPhotoUrls": photoUrls,
 
-    "shipmentCreatedBy":
-        _adminId,
+  // Admin
+  "shipmentCreatedBy": _adminId,
 
-    "shipmentCreatedAt":
-        FieldValue.serverTimestamp(),
+  // Time
+  "shipmentCreatedAt":
+      FieldValue.serverTimestamp(),
 
-    "updatedAt":
-        FieldValue.serverTimestamp(),
-  });
+  "updatedAt":
+      FieldValue.serverTimestamp(),
+});
 }
 ///////////////////////////////////////////////////////////
 /// SEND SHIPMENT TO CUSTOMER CHAT

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../home/home_screen.dart';
 import '../../splash/widgets/luxury_background.dart';
 import '../widgets/auth_button.dart';
@@ -30,7 +30,142 @@ class _LoginScreenState extends State<LoginScreen> {
     passwordController.dispose();
     super.dispose();
   }
+Future<void> _saveFcmToken({
+  required User user,
+}) async {
+  try {
+    /////////////////////////////////////////////////////////
+    /// GET FCM TOKEN
+    /////////////////////////////////////////////////////////
 
+    final messaging =
+        FirebaseMessaging.instance;
+
+    final token =
+        await messaging.getToken();
+
+    if (token == null ||
+        token.trim().isEmpty) {
+      debugPrint(
+        "⚠️ FCM token is null or empty",
+      );
+      return;
+    }
+
+    debugPrint(
+      "🔥 FCM TOKEN: $token",
+    );
+
+    /////////////////////////////////////////////////////////
+    /// CHECK ADMIN
+    /////////////////////////////////////////////////////////
+
+    final adminRef =
+        FirebaseFirestore.instance
+            .collection("admins")
+            .doc(user.uid);
+
+    final adminSnapshot =
+        await adminRef.get();
+
+    /////////////////////////////////////////////////////////
+    /// ADMIN USER
+    /////////////////////////////////////////////////////////
+
+    if (adminSnapshot.exists) {
+      await adminRef.set(
+        {
+          "fcmToken": token,
+          "fcmTokenUpdatedAt":
+              FieldValue.serverTimestamp(),
+        },
+        SetOptions(
+          merge: true,
+        ),
+      );
+
+      debugPrint(
+        "✅ FCM token saved to admins/${user.uid}",
+      );
+
+      return;
+    }
+
+    /////////////////////////////////////////////////////////
+    /// CUSTOMER
+    /// 
+    /// Save to:
+    /// Appusers/{uid}
+    /////////////////////////////////////////////////////////
+
+    final appUserRef =
+        FirebaseFirestore.instance
+            .collection("appUsers")
+            .doc(user.uid);
+
+    final appUserSnapshot =
+        await appUserRef.get();
+
+    if (!appUserSnapshot.exists) {
+      debugPrint(
+        "⚠️ Appuser document not found: Appusers/${user.uid}",
+      );
+
+      return;
+    }
+
+    /////////////////////////////////////////////////////////
+    /// SAVE CUSTOMER TOKEN
+    /////////////////////////////////////////////////////////
+
+    await appUserRef.set(
+      {
+        "fcmToken": token,
+        "fcmTokenUpdatedAt":
+            FieldValue.serverTimestamp(),
+      },
+      SetOptions(
+        merge: true,
+      ),
+    );
+
+    debugPrint(
+      "✅ FCM token saved to Appusers/${user.uid}",
+    );
+
+  } catch (e) {
+    /////////////////////////////////////////////////////////
+    /// TOKEN FAILURE SHOULD NOT BLOCK LOGIN
+    /////////////////////////////////////////////////////////
+
+    debugPrint(
+      "❌ Failed to save FCM token: $e",
+    );
+  }
+}
+Future<void> _requestNotificationPermission() async {
+  try {
+    final messaging =
+        FirebaseMessaging.instance;
+
+    final settings =
+        await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+
+    debugPrint(
+      "Notification permission: "
+      "${settings.authorizationStatus}",
+    );
+  } catch (e) {
+    debugPrint(
+      "Failed to request notification permission: $e",
+    );
+  }
+}
  Future<void> login() async {
   FocusScope.of(context).unfocus();
 
@@ -78,18 +213,30 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = "91$phone@yani.app";
 
     final credential =
-        await FirebaseAuth.instance
-            .signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    await FirebaseAuth.instance
+        .signInWithEmailAndPassword(
+  email: email,
+  password: password,
+);
 
-    if (!mounted) return;
+/////////////////////////////////////////////////////////
+/// SAVE FCM TOKEN
+/////////////////////////////////////////////////////////
+await _requestNotificationPermission();
+await _saveFcmToken(
+  user: credential.user!,
+);
 
-    await LoginRouterService.instance.routeUser(
-      context: context,
-      firebaseUser: credential.user!,
-    );
+if (!mounted) return;
+
+/////////////////////////////////////////////////////////
+/// ROUTE USER
+/////////////////////////////////////////////////////////
+
+await LoginRouterService.instance.routeUser(
+  context: context,
+  firebaseUser: credential.user!,
+);
   } on FirebaseAuthException catch (e) {
     if (!mounted) return;
 

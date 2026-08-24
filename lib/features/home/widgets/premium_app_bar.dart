@@ -254,52 +254,51 @@ class _LuxuryBadgeIcon extends StatelessWidget {
           onTap: onTap,
         ),
 
-        AnimatedSwitcher(
-          duration: const Duration(
-            milliseconds: 250,
-          ),
-          transitionBuilder:
-              (child, animation) {
-            return ScaleTransition(
-              scale: animation,
-              child: child,
-            );
-          },
-          child: count == 0
-              ? const SizedBox.shrink()
-              : Positioned(
-                  key: ValueKey(count),
-                  right: -3,
-                  top: -3,
-                  child: Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: const Color(
-                        0xffD81B78,
-                      ),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      count > 99
-                          ? "99+"
-                          : "$count",
-                      style:
-                          const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
+        if (count > 0)
+          Positioned(
+            right: -3,
+            top: -3,
+            child: AnimatedSwitcher(
+              duration: const Duration(
+                milliseconds: 250,
+              ),
+              transitionBuilder: (
+                child,
+                animation,
+              ) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: child,
+                );
+              },
+              child: Container(
+                key: ValueKey(count),
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xffD81B78,
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
                   ),
                 ),
-        ),
+                alignment: Alignment.center,
+                child: Text(
+                  count > 99
+                      ? "99+"
+                      : "$count",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:flutter/foundation.dart';
 import '../models/cart_item_model.dart';
 import '../models/home_product_model.dart';
 import '../models/variation_model.dart';
@@ -226,35 +226,173 @@ if (variation != null) {
     /// =========================================================
   /// UPDATE QUANTITY
   /// =========================================================
-  Future<void> updateQuantity({
-    required CartItemModel item,
-    required int quantity,
-  }) async {
-    if (quantity <= 0) {
-      await removeItem(item.id);
-      return;
-    }
+  /// ===========================================================
+/// GET CURRENT STOCK
+/// ===========================================================
 
-    final totalPrice = item.unitPrice * quantity;
+Future<int> getCurrentStock({
+  required CartItemModel item,
+}) async {
+  // =========================================================
+  // BASE PATH
+  //
+  // collections/{collectionId}
+  //   /subcollections/{subCollectionId}
+  // =========================================================
 
-    await _cartCollection.doc(item.id).update({
-      "quantity": quantity,
-      "totalPrice": totalPrice,
-      "updatedAt": Timestamp.now(),
-    });
+  final subCollectionRef = _firestore
+      .collection("collections")
+      .doc(item.collectionId)
+      .collection("subcollections")
+      .doc(item.subCollectionId);
+
+  // =========================================================
+  // PRODUCT COLLECTION
+  //
+  // products/{productId}
+  // OR
+  // appProducts/{productId}
+  // =========================================================
+
+  final productRef = subCollectionRef
+      .collection(item.source)
+      .doc(item.productId);
+
+  // =========================================================
+  // GET LATEST PRODUCT
+  // =========================================================
+
+  final productDoc = await productRef.get();
+
+  // =========================================================
+  // PRODUCT NOT FOUND
+  // =========================================================
+
+  if (!productDoc.exists) {
+    throw Exception(
+      "Product is no longer available.",
+    );
   }
+
+  // =========================================================
+  // READ PRODUCT
+  // =========================================================
+
+  final product =
+      ProductModel.fromFirestore(productDoc);
+
+  // =========================================================
+  // SIMPLE PRODUCT
+  // =========================================================
+
+  if (item.variation == null) {
+    return product.quantity;
+  }
+
+  // =========================================================
+  // SELECTED VARIATION
+  // =========================================================
+
+  final selectedColor =
+      item.variation!.color.trim();
+
+  final selectedSize =
+      item.variation!.size.trim();
+
+  // =========================================================
+  // FIND EXACT VARIATION
+  // =========================================================
+
+  final matchingVariations =
+      product.variations.where(
+    (variation) =>
+        variation.color.trim() ==
+            selectedColor &&
+        variation.size.trim() ==
+            selectedSize,
+  );
+
+  // =========================================================
+  // VARIATION NOT FOUND
+  // =========================================================
+
+  if (matchingVariations.isEmpty) {
+    throw Exception(
+      "Selected variation is no longer available.",
+    );
+  }
+
+  // =========================================================
+  // RETURN CURRENT STOCK
+  // =========================================================
+
+  return matchingVariations.first.quantity;
+}
+Future<void> updateQuantity({
+  required CartItemModel item,
+  required int quantity,
+}) async {
+  if (quantity < 1) {
+    throw Exception(
+      "Quantity must be at least 1.",
+    );
+  }
+
+  final currentStock = await getCurrentStock(
+    item: item,
+  );
+
+  if (currentStock <= 0) {
+    throw Exception(
+      "This product is currently out of stock.",
+    );
+  }
+
+  if (quantity > currentStock) {
+    throw Exception(
+      "Only $currentStock item(s) available.",
+    );
+  }
+
+  final totalPrice =
+      item.unitPrice * quantity;
+
+  await _cartCollection
+      .doc(item.id)
+      .update({
+    "quantity": quantity,
+    "totalPrice": totalPrice,
+    "updatedAt": Timestamp.now(),
+  });
+}
 
   /// =========================================================
   /// INCREASE
   /// =========================================================
-  Future<void> increaseQuantity({
-    required CartItemModel item,
-  }) async {
-    await updateQuantity(
-      item: item,
-      quantity: item.quantity + 1,
+Future<void> increaseQuantity({
+  required CartItemModel item,
+}) async {
+  final currentStock = await getCurrentStock(
+    item: item,
+  );
+
+  if (currentStock <= 0) {
+    throw Exception(
+      "This product is currently out of stock.",
     );
   }
+
+  if (item.quantity >= currentStock) {
+    throw Exception(
+      "Only $currentStock item(s) available.",
+    );
+  }
+
+  await updateQuantity(
+    item: item,
+    quantity: item.quantity + 1,
+  );
+}
 
   /// =========================================================
   /// DECREASE

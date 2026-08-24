@@ -459,40 +459,27 @@ String get _adminId {
     /////////////////////////////////////////////////////////
     /// CALCULATE COUNTS
     /////////////////////////////////////////////////////////
+int confirmedCount = 0;
+int pendingCount = 0;
 
-    int correct = 0;
-    int wrong = 0;
-    int missing = 0;
-    int pending = 0;
+for (final rawItem in packingItems) {
+  if (rawItem is! Map) {
+    pendingCount++;
+    continue;
+  }
 
-    for (final rawItem
-        in packingItems) {
-      if (rawItem is! Map) {
-        pending++;
-        continue;
-      }
+  final itemStatus =
+      (rawItem["status"] ?? "")
+          .toString()
+          .trim()
+          .toLowerCase();
 
-      final itemStatus =
-          (rawItem["status"] ?? "")
-              .toString();
-
-      switch (itemStatus) {
-        case "correct":
-          correct++;
-          break;
-
-        case "wrong":
-          wrong++;
-          break;
-
-        case "missing":
-          missing++;
-          break;
-
-        default:
-          pending++;
-      }
-    }
+  if (itemStatus == "confirmed") {
+    confirmedCount++;
+  } else {
+    pendingCount++;
+  }
+}
 
     /////////////////////////////////////////////////////////
     /// SAVE PACKING DATA
@@ -501,17 +488,11 @@ String get _adminId {
     packingData["items"] =
         packingItems;
 
-    packingData["correctCount"] =
-        correct;
+    packingData["confirmedCount"] =
+    confirmedCount;
 
-    packingData["wrongCount"] =
-        wrong;
-
-    packingData["missingCount"] =
-        missing;
-
-    packingData["pendingCount"] =
-        pending;
+packingData["pendingCount"] =
+    pendingCount;
 
     packingData["updatedAt"] =
         FieldValue.serverTimestamp();
@@ -544,18 +525,21 @@ Future<void> updatePackingItemDetails({
   required int itemIndex,
   String? productCode,
   String? variant,
-  int? quantity,
+  int? receivedQuantity,
   int? missingQuantity,
   String? adminNote,
-  
 }) async {
   final adminId = _adminId;
+
   final chatRef = _firestore
       .collection("orderChats")
       .doc(orderId);
 
-  final snapshot =
-      await chatRef.get();
+  /////////////////////////////////////////////////////////
+  /// GET ORDER CHAT
+  /////////////////////////////////////////////////////////
+
+  final snapshot = await chatRef.get();
 
   if (!snapshot.exists) {
     throw Exception(
@@ -573,8 +557,7 @@ Future<void> updatePackingItemDetails({
   final rawPacking =
       data["packing"];
 
-  final Map<String, dynamic>
-      packingData =
+  final Map<String, dynamic> packingData =
       rawPacking is Map
           ? Map<String, dynamic>.from(
               rawPacking,
@@ -582,14 +565,13 @@ Future<void> updatePackingItemDetails({
           : {};
 
   /////////////////////////////////////////////////////////
-  /// EXISTING ITEMS
+  /// EXISTING PACKING ITEMS
   /////////////////////////////////////////////////////////
 
   final rawItems =
       packingData["items"];
 
-  final List<dynamic>
-      packingItems =
+  final List<dynamic> packingItems =
       rawItems is List
           ? List<dynamic>.from(
               rawItems,
@@ -600,8 +582,7 @@ Future<void> updatePackingItemDetails({
   /// MAKE SURE ITEM EXISTS
   /////////////////////////////////////////////////////////
 
-  while (packingItems.length <=
-      itemIndex) {
+  while (packingItems.length <= itemIndex) {
     packingItems.add({});
   }
 
@@ -612,8 +593,7 @@ Future<void> updatePackingItemDetails({
   final rawItem =
       packingItems[itemIndex];
 
-  final Map<String, dynamic>
-      itemData =
+  final Map<String, dynamic> itemData =
       rawItem is Map
           ? Map<String, dynamic>.from(
               rawItem,
@@ -621,7 +601,63 @@ Future<void> updatePackingItemDetails({
           : {};
 
   /////////////////////////////////////////////////////////
-  /// UPDATE ONLY PROVIDED VALUES
+  /// ALWAYS GET ORIGINAL ORDERED QUANTITY
+  ///
+  /// IMPORTANT:
+  /// The authoritative ordered quantity comes from:
+  ///
+  /// orders/{orderId}
+  ///    items[itemIndex]
+  ///       quantity
+  ///
+  /// This prevents orderedQuantity from becoming 0
+  /// inside packing.items.
+  /////////////////////////////////////////////////////////
+
+  if (itemData["orderedQuantity"] == null) {
+    final orderRef = _firestore
+        .collection("orders")
+        .doc(orderId);
+
+    final orderSnapshot =
+        await orderRef.get();
+
+    if (!orderSnapshot.exists) {
+      throw Exception(
+        "Original order not found.",
+      );
+    }
+
+    final orderData =
+        orderSnapshot.data() ?? {};
+
+    final rawOrderItems =
+        orderData["items"];
+
+    if (rawOrderItems is! List ||
+        itemIndex < 0 ||
+        itemIndex >= rawOrderItems.length) {
+      throw Exception(
+        "Original order item not found.",
+      );
+    }
+
+    final originalItem =
+        rawOrderItems[itemIndex];
+
+    if (originalItem is Map) {
+      itemData["orderedQuantity"] =
+          int.tryParse(
+                "${originalItem["quantity"] ?? 0}",
+              ) ??
+              0;
+    } else {
+      itemData["orderedQuantity"] = 0;
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE PRODUCT CODE
   /////////////////////////////////////////////////////////
 
   if (productCode != null) {
@@ -629,20 +665,36 @@ Future<void> updatePackingItemDetails({
         productCode.trim();
   }
 
+  /////////////////////////////////////////////////////////
+  /// UPDATE VARIANT
+  /////////////////////////////////////////////////////////
+
   if (variant != null) {
     itemData["variant"] =
         variant.trim();
   }
 
-  if (quantity != null) {
-    itemData["quantity"] =
-        quantity;
+  /////////////////////////////////////////////////////////
+  /// UPDATE RECEIVED QUANTITY
+  /////////////////////////////////////////////////////////
+
+  if (receivedQuantity != null) {
+    itemData["receivedQuantity"] =
+        receivedQuantity;
   }
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE MISSING QUANTITY
+  /////////////////////////////////////////////////////////
 
   if (missingQuantity != null) {
     itemData["missingQuantity"] =
         missingQuantity;
   }
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE ADMIN NOTE
+  /////////////////////////////////////////////////////////
 
   if (adminNote != null) {
     itemData["adminNote"] =
@@ -650,50 +702,38 @@ Future<void> updatePackingItemDetails({
   }
 
   /////////////////////////////////////////////////////////
-  /// UPDATED TIME
-  ///
-  /// IMPORTANT:
-  /// This item is inside an ARRAY.
-  /// FieldValue.serverTimestamp() is NOT allowed here.
+  /// UPDATE ITEM METADATA
   /////////////////////////////////////////////////////////
 
   itemData["updatedBy"] =
-    adminId;
+      adminId;
 
-itemData["updatedAt"] =
-    Timestamp.now();
+  itemData["updatedAt"] =
+      Timestamp.now();
+
   /////////////////////////////////////////////////////////
-  /// SAVE ITEM BACK TO ARRAY
+  /// SAVE ITEM BACK INTO ARRAY
   /////////////////////////////////////////////////////////
 
   packingItems[itemIndex] =
       itemData;
 
   /////////////////////////////////////////////////////////
-  /// SAVE PACKING ITEMS
+  /// SAVE PACKING DATA
   /////////////////////////////////////////////////////////
 
   packingData["items"] =
       packingItems;
 
-  /////////////////////////////////////////////////////////
-  /// TOP LEVEL TIMESTAMP
-  ///
-  /// This IS allowed because packingData is a map,
-  /// not an array element.
-  /////////////////////////////////////////////////////////
-
   packingData["updatedAt"] =
       FieldValue.serverTimestamp();
 
   /////////////////////////////////////////////////////////
-  /// SAVE TO FIRESTORE
+  /// FIRESTORE UPDATE
   /////////////////////////////////////////////////////////
 
   await chatRef.update({
-    "packing":
-        packingData,
-
+    "packing": packingData,
     "updatedAt":
         FieldValue.serverTimestamp(),
   });
@@ -712,8 +752,11 @@ Future<void> confirmPackingItem({
       .collection("orderChats")
       .doc(orderId);
 
-  final snapshot =
-      await chatRef.get();
+  /////////////////////////////////////////////////////////
+  /// GET ORDER CHAT
+  /////////////////////////////////////////////////////////
+
+  final snapshot = await chatRef.get();
 
   if (!snapshot.exists) {
     throw Exception(
@@ -725,14 +768,13 @@ Future<void> confirmPackingItem({
       snapshot.data() ?? {};
 
   /////////////////////////////////////////////////////////
-  /// PACKING
+  /// PACKING DATA
   /////////////////////////////////////////////////////////
 
   final rawPacking =
       data["packing"];
 
-  final Map<String, dynamic>
-      packingData =
+  final Map<String, dynamic> packingData =
       rawPacking is Map
           ? Map<String, dynamic>.from(
               rawPacking,
@@ -740,14 +782,13 @@ Future<void> confirmPackingItem({
           : {};
 
   /////////////////////////////////////////////////////////
-  /// ITEMS
+  /// PACKING ITEMS
   /////////////////////////////////////////////////////////
 
   final rawItems =
       packingData["items"];
 
-  final List<dynamic>
-      packingItems =
+  final List<dynamic> packingItems =
       rawItems is List
           ? List<dynamic>.from(
               rawItems,
@@ -762,14 +803,13 @@ Future<void> confirmPackingItem({
   }
 
   /////////////////////////////////////////////////////////
-  /// ITEM
+  /// CURRENT PACKING ITEM
   /////////////////////////////////////////////////////////
 
   final rawItem =
       packingItems[itemIndex];
 
-  final Map<String, dynamic>
-      itemData =
+  final Map<String, dynamic> itemData =
       rawItem is Map
           ? Map<String, dynamic>.from(
               rawItem,
@@ -777,40 +817,103 @@ Future<void> confirmPackingItem({
           : {};
 
   /////////////////////////////////////////////////////////
-  /// QUANTITIES
+  /// GET ORIGINAL ORDER
+  ///
+  /// IMPORTANT:
+  /// Ordered quantity comes from:
+  ///
+  /// orders/{orderId}
+  ///     items[itemIndex]
+  ///         quantity
+  ///
+  /// NOT from packing.items
   /////////////////////////////////////////////////////////
 
-  final ordered =
+  final orderRef = _firestore
+      .collection("orders")
+      .doc(orderId);
+
+  final orderSnapshot =
+      await orderRef.get();
+
+  if (!orderSnapshot.exists) {
+    throw Exception(
+      "Original order not found.",
+    );
+  }
+
+  final orderData =
+      orderSnapshot.data() ?? {};
+
+  final rawOrderItems =
+      orderData["items"];
+
+  if (rawOrderItems is! List ||
+      itemIndex < 0 ||
+      itemIndex >= rawOrderItems.length) {
+    throw Exception(
+      "Original order item not found.",
+    );
+  }
+
+  final originalItem =
+      rawOrderItems[itemIndex];
+
+  /////////////////////////////////////////////////////////
+  /// ORDERED QUANTITY
+  /////////////////////////////////////////////////////////
+
+  final int ordered =
+      originalItem is Map
+          ? int.tryParse(
+                "${originalItem["quantity"] ?? 0}",
+              ) ??
+              0
+          : 0;
+
+  /////////////////////////////////////////////////////////
+  /// SAVE ORDERED QUANTITY INTO PACKING ITEM
+  ///
+  /// This makes the packing document self-contained.
+  /////////////////////////////////////////////////////////
+
+  itemData["orderedQuantity"] =
+      ordered;
+
+  /////////////////////////////////////////////////////////
+  /// RECEIVED QUANTITY
+  /////////////////////////////////////////////////////////
+
+  final int received =
       int.tryParse(
-            "${itemData["orderedQuantity"] ?? itemData["quantity"] ?? 0}",
+            "${itemData["receivedQuantity"] ?? 0}",
           ) ??
           0;
 
-  final received =
-      int.tryParse(
-            "${itemData["receivedQuantity"] ?? itemData["quantity"] ?? 0}",
-          ) ??
-          0;
+  /////////////////////////////////////////////////////////
+  /// MISSING QUANTITY
+  /////////////////////////////////////////////////////////
 
-  final missing =
+  final int missing =
       int.tryParse(
             "${itemData["missingQuantity"] ?? 0}",
           ) ??
           0;
 
   /////////////////////////////////////////////////////////
-  /// VALIDATE
+  /// VALIDATE QUANTITIES
   /////////////////////////////////////////////////////////
 
-  if (received + missing !=
-      ordered) {
+  if (received + missing != ordered) {
     throw Exception(
-      "Cannot confirm. Received ($received) + Missing ($missing) must equal Ordered ($ordered).",
+      "Cannot confirm. "
+      "Received ($received) + Missing ($missing) "
+      "must equal Ordered ($ordered).",
     );
   }
 
   /////////////////////////////////////////////////////////
-  /// CONFIRM
+  /// CONFIRM CURRENT ITEM
   /////////////////////////////////////////////////////////
 
   itemData["status"] =
@@ -822,15 +925,21 @@ Future<void> confirmPackingItem({
   itemData["confirmedAt"] =
       Timestamp.now();
 
+  itemData["updatedBy"] =
+      adminId;
+
+  itemData["updatedAt"] =
+      Timestamp.now();
+
   /////////////////////////////////////////////////////////
-  /// SAVE ITEM
+  /// SAVE CURRENT ITEM BACK TO ARRAY
   /////////////////////////////////////////////////////////
 
   packingItems[itemIndex] =
       itemData;
 
   /////////////////////////////////////////////////////////
-  /// CALCULATE REPORT
+  /// CALCULATE PACKING REPORT
   /////////////////////////////////////////////////////////
 
   int confirmedCount = 0;
@@ -840,8 +949,14 @@ Future<void> confirmPackingItem({
   int totalReceived = 0;
   int totalMissing = 0;
 
-  for (final raw
-      in packingItems) {
+  for (
+    int i = 0;
+    i < packingItems.length;
+    i++
+  ) {
+    final raw =
+        packingItems[i];
+
     if (raw is! Map) {
       pendingCount++;
       continue;
@@ -852,23 +967,62 @@ Future<void> confirmPackingItem({
       raw,
     );
 
-    final itemOrdered =
+    ///////////////////////////////////////////////////////
+    /// ORDERED QUANTITY FOR EACH ITEM
+    ///
+    /// Prefer saved orderedQuantity.
+    /// If it doesn't exist, get it from original order.
+    ///////////////////////////////////////////////////////
+
+    int itemOrdered =
         int.tryParse(
-              "${map["orderedQuantity"] ?? map["quantity"] ?? 0}",
+              "${map["orderedQuantity"] ?? 0}",
             ) ??
             0;
 
-    final itemReceived =
+    if (itemOrdered <= 0 &&
+        i < rawOrderItems.length) {
+      final original =
+          rawOrderItems[i];
+
+      if (original is Map) {
+        itemOrdered =
+            int.tryParse(
+                  "${original["quantity"] ?? 0}",
+                ) ??
+                0;
+
+        map["orderedQuantity"] =
+            itemOrdered;
+
+        packingItems[i] =
+            map;
+      }
+    }
+
+    ///////////////////////////////////////////////////////
+    /// RECEIVED
+    ///////////////////////////////////////////////////////
+
+    final int itemReceived =
         int.tryParse(
-              "${map["receivedQuantity"] ?? map["quantity"] ?? 0}",
+              "${map["receivedQuantity"] ?? 0}",
             ) ??
             0;
 
-    final itemMissing =
+    ///////////////////////////////////////////////////////
+    /// MISSING
+    ///////////////////////////////////////////////////////
+
+    final int itemMissing =
         int.tryParse(
               "${map["missingQuantity"] ?? 0}",
             ) ??
             0;
+
+    ///////////////////////////////////////////////////////
+    /// TOTALS
+    ///////////////////////////////////////////////////////
 
     totalOrdered +=
         itemOrdered;
@@ -879,8 +1033,16 @@ Future<void> confirmPackingItem({
     totalMissing +=
         itemMissing;
 
-    if (map["status"] ==
-        "confirmed") {
+    ///////////////////////////////////////////////////////
+    /// STATUS
+    ///////////////////////////////////////////////////////
+
+    final status =
+        "${map["status"] ?? ""}"
+            .trim()
+            .toLowerCase();
+
+    if (status == "confirmed") {
       confirmedCount++;
     } else {
       pendingCount++;
@@ -888,12 +1050,16 @@ Future<void> confirmPackingItem({
   }
 
   /////////////////////////////////////////////////////////
-  /// OVERALL STATUS
+  /// CHECK WHETHER EVERYTHING IS CONFIRMED
   /////////////////////////////////////////////////////////
 
-  final allConfirmed =
+  final bool allConfirmed =
       packingItems.isNotEmpty &&
-          pendingCount == 0;
+      pendingCount == 0;
+
+  /////////////////////////////////////////////////////////
+  /// UPDATE PACKING DATA
+  /////////////////////////////////////////////////////////
 
   packingData["items"] =
       packingItems;
@@ -901,16 +1067,13 @@ Future<void> confirmPackingItem({
   packingData["totalItems"] =
       packingItems.length;
 
-  packingData[
-          "totalOrderedQuantity"] =
+  packingData["totalOrderedQuantity"] =
       totalOrdered;
 
-  packingData[
-          "totalReceivedQuantity"] =
+  packingData["totalReceivedQuantity"] =
       totalReceived;
 
-  packingData[
-          "totalMissingQuantity"] =
+  packingData["totalMissingQuantity"] =
       totalMissing;
 
   packingData["confirmedCount"] =
@@ -935,7 +1098,7 @@ Future<void> confirmPackingItem({
       FieldValue.serverTimestamp();
 
   /////////////////////////////////////////////////////////
-  /// FINAL CONFIRMATION
+  /// FINAL PACKING CONFIRMATION
   /////////////////////////////////////////////////////////
 
   if (allConfirmed) {
@@ -947,7 +1110,7 @@ Future<void> confirmPackingItem({
   }
 
   /////////////////////////////////////////////////////////
-  /// SAVE
+  /// SAVE TO FIRESTORE
   /////////////////////////////////////////////////////////
 
   await chatRef.update({

@@ -1073,7 +1073,7 @@ Future<String> _getAdminName(
           .updatePackingItemDetails(
         orderId: widget.orderId,
         itemIndex: index,
-        quantity: quantity,
+         receivedQuantity: quantity,
       );
 
       /////////////////////////////////////////////////////////

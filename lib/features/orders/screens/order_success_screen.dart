@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../order_chat/screens/order_chat_list_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final String orderId;
@@ -189,11 +190,13 @@ class OrderSuccessScreen extends StatelessWidget {
                   ),
 
                   onPressed: () {
-
-                    // TODO
-                    // Navigate Orders
-
-                  },
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const OrderChatListScreen(),
+    ),
+  );
+},
 
                   child: const Text(
                     "View My Orders",

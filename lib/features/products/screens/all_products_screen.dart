@@ -7,7 +7,7 @@ import '../../home/widgets/category_section.dart';
 import '../../home/widgets/premium_app_bar.dart';
 import '../../home/widgets/premium_product_card.dart';
 import '../../cart/screens/cart_screen.dart';
-
+import '../../navigation/screens/main_navigation_screen.dart';
 class AllProductsScreen extends StatefulWidget {
   const AllProductsScreen({super.key});
 
@@ -350,9 +350,10 @@ Widget build(BuildContext context) {
       MediaQuery.of(context).size.width > 700;
 
   return Scaffold(
-    backgroundColor: const Color(0xffFCFCFC),
+  backgroundColor: const Color(0xffFCFCFC),
 
-    body: SafeArea(
+  body: SafeArea(
+      
       child: Column(
         children: [
           //--------------------------------------------------
@@ -458,15 +459,12 @@ Widget build(BuildContext context) {
                     ),
                     itemCount: _products.length +
                         (_isLoadingMore ? 2 : 0),
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount:
-                          isTablet ? 3 : 2,
-                      crossAxisSpacing: 18,
-                      mainAxisSpacing: 22,
-                      childAspectRatio:
-                          isTablet ? 0.62 : 0.48,
-                    ),
+                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: isTablet ? 3 : 2,
+  crossAxisSpacing: 14,
+  mainAxisSpacing: 14,
+  childAspectRatio: isTablet ? 0.72 : 0.62,
+),
                     itemBuilder: (context, index) {
                       //------------------------------------------------
                       // BOTTOM LOADER
@@ -496,6 +494,62 @@ Widget build(BuildContext context) {
         ],
       ),
     ),
+    bottomNavigationBar: NavigationBar(
+  selectedIndex: 2,
+
+  onDestinationSelected: (index) {
+    if (index == 2) {
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MainNavigationScreen(
+          initialIndex: index,
+        ),
+      ),
+    );
+  },
+
+  destinations: const [
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home),
+      label: "Home",
+    ),
+
+    NavigationDestination(
+      icon: Icon(Icons.auto_stories_outlined),
+      selectedIcon: Icon(Icons.auto_stories),
+      label: "Status",
+    ),
+
+    NavigationDestination(
+      icon: Icon(Icons.grid_view_outlined),
+      selectedIcon: Icon(Icons.grid_view_rounded),
+      label: "Products",
+    ),
+
+    NavigationDestination(
+      icon: Icon(Icons.chat_bubble_outline),
+      selectedIcon: Icon(Icons.chat),
+      label: "Orders",
+    ),
+
+    NavigationDestination(
+      icon: Icon(Icons.shopping_cart_outlined),
+      selectedIcon: Icon(Icons.shopping_cart),
+      label: "Cart",
+    ),
+
+    NavigationDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person),
+      label: "Profile",
+    ),
+  ],
+),
   );
 }
 }

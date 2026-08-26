@@ -5,19 +5,28 @@ import '../../../services/category_service.dart';
 import 'status_viewer_screen.dart';
 
 class StatusScreen extends StatelessWidget {
-  const StatusScreen({super.key});
+  const StatusScreen({
+    super.key,
+  });
 
-  static const Color primary = Color(0xffE91E63);
-  static const Color dark = Color(0xff241B2F);
+  static const Color primary =
+      Color(0xffE91E63);
+
+  static const Color dark =
+      Color(0xff241B2F);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
-      backgroundColor: const Color(0xffF8F7FA),
+      backgroundColor:
+          const Color(0xffF8F7FA),
 
       body: SafeArea(
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics:
+              const BouncingScrollPhysics(),
 
           slivers: [
             ///////////////////////////////////////////////////////
@@ -26,35 +35,78 @@ class StatusScreen extends StatelessWidget {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
+                padding:
+                    const EdgeInsets.fromLTRB(
                   20,
                   22,
                   20,
-                  8,
+                  12,
                 ),
 
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                child: Row(
                   children: [
-                    const Text(
-                      "Status",
-                      style: TextStyle(
-                        fontSize: 29,
-                        fontWeight: FontWeight.w900,
-                        color: dark,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                        children: [
+                          const Text(
+                            "Status",
+                            style:
+                                TextStyle(
+                              fontSize: 29,
+                              fontWeight:
+                                  FontWeight.w900,
+                              color: dark,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 5,
+                          ),
+
+                          Text(
+                            "Explore our latest collections",
+                            style:
+                                TextStyle(
+                              fontSize: 14,
+                              color: Colors
+                                  .grey
+                                  .shade600,
+                              fontWeight:
+                                  FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    //////////////////////////////////////////////////
+                    /// STATUS ICON
+                    //////////////////////////////////////////////////
 
-                    Text(
-                      "Explore our latest collections",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+                    Container(
+                      width: 42,
+                      height: 42,
+
+                      decoration:
+                          BoxDecoration(
+                        color: primary
+                            .withOpacity(.09),
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          14,
+                        ),
+                      ),
+
+                      child:
+                          const Icon(
+                        Icons
+                            .auto_awesome_outlined,
+                        color: primary,
+                        size: 22,
                       ),
                     ),
                   ],
@@ -67,45 +119,48 @@ class StatusScreen extends StatelessWidget {
             ///////////////////////////////////////////////////////
 
             SliverToBoxAdapter(
-              child: StreamBuilder<List<CategoryModel>>(
+              child:
+                  StreamBuilder<
+                      List<CategoryModel>>(
                 stream:
-                    CategoryService().getCategories(),
+                    CategoryService()
+                        .getCategories(),
 
                 builder: (
                   context,
                   snapshot,
                 ) {
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
                   /// LOADING
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
 
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(30),
-                      child: Center(
-                        child:
-                            CircularProgressIndicator(
-                          color: primary,
-                        ),
-                      ),
-                    );
+                  if (snapshot
+                          .connectionState ==
+                      ConnectionState
+                          .waiting) {
+                    return _buildLoading();
                   }
 
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
                   /// ERROR
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
 
                   if (snapshot.hasError) {
                     return Padding(
                       padding:
-                          const EdgeInsets.all(30),
-                      child: Center(
+                          const EdgeInsets
+                              .all(
+                        30,
+                      ),
+                      child:
+                          Center(
                         child: Text(
                           "Unable to load collections.",
-                          style: TextStyle(
-                            color:
-                                Colors.grey.shade700,
+                          style:
+                              TextStyle(
+                            color: Colors
+                                .grey
+                                .shade700,
                             fontWeight:
                                 FontWeight.w600,
                           ),
@@ -117,14 +172,18 @@ class StatusScreen extends StatelessWidget {
                   final categories =
                       snapshot.data ?? [];
 
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
                   /// EMPTY
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
 
                   if (categories.isEmpty) {
                     return const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(
+                      padding:
+                          EdgeInsets.all(
+                        40,
+                      ),
+                      child:
+                          Center(
                         child: Text(
                           "No collections available.",
                         ),
@@ -132,18 +191,22 @@ class StatusScreen extends StatelessWidget {
                     );
                   }
 
-                  ///////////////////////////////////////////////////
-                  /// HORIZONTAL STATUS LIST
-                  ///////////////////////////////////////////////////
+                  //////////////////////////////////////////////////
+                  /// HORIZONTAL STATUS CARDS
+                  //////////////////////////////////////////////////
 
                   return SizedBox(
-                    height: 126,
+                    height: 154,
 
-                    child: ListView.separated(
+                    child:
+                        ListView.separated(
                       padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 15,
+                          const EdgeInsets
+                              .fromLTRB(
+                        18,
+                        8,
+                        18,
+                        18,
                       ),
 
                       scrollDirection:
@@ -158,15 +221,16 @@ class StatusScreen extends StatelessWidget {
                       separatorBuilder:
                           (_, __) =>
                               const SizedBox(
-                        width: 17,
+                        width: 10,
                       ),
 
                       itemBuilder:
                           (context, index) {
                         final category =
-                            categories[index];
+                            categories[
+                                index];
 
-                        return _StatusCircle(
+                        return _StatusCard(
                           category:
                               category,
 
@@ -174,13 +238,45 @@ class StatusScreen extends StatelessWidget {
                             Navigator.push(
                               context,
 
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    StatusViewerScreen(
-                                  category:
-                                      category,
-
+                              PageRouteBuilder(
+                                transitionDuration:
+                                    const Duration(
+                                  milliseconds:
+                                      280,
                                 ),
+
+                                reverseTransitionDuration:
+                                    const Duration(
+                                  milliseconds:
+                                      220,
+                                ),
+
+                                pageBuilder:
+                                    (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                ) {
+                                  return StatusViewerScreen(
+                                    category:
+                                        category,
+                                  );
+                                },
+
+                                transitionsBuilder:
+                                    (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  return FadeTransition(
+                                    opacity:
+                                        animation,
+                                    child:
+                                        child,
+                                  );
+                                },
                               ),
                             );
                           },
@@ -199,12 +295,16 @@ class StatusScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(
+                    const EdgeInsets
+                        .symmetric(
                   horizontal: 20,
                 ),
 
-                child: Divider(
-                  color: Colors.grey.shade200,
+                child:
+                    Divider(
+                  color:
+                      Colors.grey.shade200,
+                  height: 18,
                 ),
               ),
             ),
@@ -215,39 +315,56 @@ class StatusScreen extends StatelessWidget {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
+                padding:
+                    const EdgeInsets.fromLTRB(
                   20,
-                  20,
+                  18,
                   20,
                   30,
                 ),
 
-                child: Container(
+                child:
+                    Container(
                   padding:
-                      const EdgeInsets.all(18),
+                      const EdgeInsets.all(
+                    18,
+                  ),
 
                   decoration:
                       BoxDecoration(
-                    color: Colors.white,
+                    color:
+                        Colors.white,
 
                     borderRadius:
-                        BorderRadius.circular(
+                        BorderRadius
+                            .circular(
                       22,
                     ),
 
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black
-                            .withOpacity(.04),
+                        color: Colors
+                            .black
+                            .withOpacity(
+                          .04,
+                        ),
                         blurRadius: 16,
                         offset:
-                            const Offset(0, 6),
+                            const Offset(
+                          0,
+                          6,
+                        ),
                       ),
                     ],
                   ),
 
-                  child: Row(
+                  child:
+                      Row(
                     children: [
+                      //////////////////////////////////////////////////
+                      /// ICON
+                      //////////////////////////////////////////////////
+
                       Container(
                         width: 44,
                         height: 44,
@@ -255,12 +372,16 @@ class StatusScreen extends StatelessWidget {
                         decoration:
                             BoxDecoration(
                           color: primary
-                              .withOpacity(.09),
+                              .withOpacity(
+                            .09,
+                          ),
                           shape:
-                              BoxShape.circle,
+                              BoxShape
+                                  .circle,
                         ),
 
-                        child: const Icon(
+                        child:
+                            const Icon(
                           Icons
                               .auto_awesome_outlined,
                           color: primary,
@@ -271,8 +392,13 @@ class StatusScreen extends StatelessWidget {
                         width: 13,
                       ),
 
+                      //////////////////////////////////////////////////
+                      /// TEXT
+                      //////////////////////////////////////////////////
+
                       const Expanded(
-                        child: Column(
+                        child:
+                            Column(
                           crossAxisAlignment:
                               CrossAxisAlignment
                                   .start,
@@ -280,22 +406,28 @@ class StatusScreen extends StatelessWidget {
                           children: [
                             Text(
                               "What's New",
-                              style: TextStyle(
+                              style:
+                                  TextStyle(
                                 fontWeight:
-                                    FontWeight.w800,
+                                    FontWeight
+                                        .w800,
                                 fontSize: 15,
                               ),
                             ),
 
-                            SizedBox(height: 3),
+                            SizedBox(
+                              height: 3,
+                            ),
 
                             Text(
                               "Tap a collection to explore available products.",
-                              style: TextStyle(
+                              style:
+                                  TextStyle(
                                 color:
                                     Colors.black54,
                                 fontSize: 13,
-                                height: 1.35,
+                                height:
+                                    1.35,
                               ),
                             ),
                           ],
@@ -311,127 +443,398 @@ class StatusScreen extends StatelessWidget {
       ),
     );
   }
+
+  //////////////////////////////////////////////////////////////
+  /// LOADING
+  //////////////////////////////////////////////////////////////
+
+  static Widget _buildLoading() {
+    return SizedBox(
+      height: 154,
+
+      child:
+          ListView.separated(
+        padding:
+            const EdgeInsets.fromLTRB(
+          18,
+          8,
+          18,
+          18,
+        ),
+
+        scrollDirection:
+            Axis.horizontal,
+
+        physics:
+            const NeverScrollableScrollPhysics(),
+
+        itemCount: 5,
+
+        separatorBuilder:
+            (_, __) =>
+                const SizedBox(
+          width: 10,
+        ),
+
+        itemBuilder:
+            (_, index) {
+          return Container(
+            width: 94,
+            height: 128,
+
+            decoration:
+                BoxDecoration(
+              color:
+                  Colors.grey.shade200,
+
+              borderRadius:
+                  BorderRadius
+                      .circular(
+                18,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-///////////////////////////////////////////////////////////////
-/// STATUS CIRCLE
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+/// STATUS CARD
+////////////////////////////////////////////////////////////////
 
-class _StatusCircle extends StatelessWidget {
+class _StatusCard
+    extends StatelessWidget {
   final CategoryModel category;
+
   final VoidCallback onTap;
 
-  const _StatusCircle({
+  const _StatusCard({
     required this.category,
     required this.onTap,
   });
 
+  static const Color primary =
+      Color(0xffE91E63);
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return GestureDetector(
       onTap: onTap,
 
-      child: SizedBox(
-        width: 76,
+      child:
+          Container(
+        width: 94,
+        height: 128,
 
-        child: Column(
-          children: [
-            /////////////////////////////////////////////////////
-            /// GRADIENT RING
-            /////////////////////////////////////////////////////
+        decoration:
+            BoxDecoration(
+          borderRadius:
+              BorderRadius
+                  .circular(
+            18,
+          ),
 
-            Container(
-              width: 72,
-              height: 72,
-
-              padding:
-                  const EdgeInsets.all(3),
-
-              decoration:
-                  const BoxDecoration(
-                shape: BoxShape.circle,
-
-                gradient:
-                    LinearGradient(
-                  colors: [
-                    Color(0xffE91E63),
-                    Color(0xffFF8A65),
-                    Color(0xffF8BBD0),
-                    Color(0xffE91E63),
-                  ],
-
-                  begin:
-                      Alignment.topLeft,
-
-                  end:
-                      Alignment.bottomRight,
-                ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black
+                  .withOpacity(
+                .10,
               ),
-
-              child: Container(
-                padding:
-                    const EdgeInsets.all(2),
-
-                decoration:
-                    const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-
-                child: ClipOval(
-                  child: Image.network(
-                    category.image,
-
-                    width: 62,
-                    height: 62,
-
-                    fit: BoxFit.cover,
-
-                    errorBuilder:
-                        (_, __, ___) {
-                      return Container(
-                        color:
-                            Colors.grey.shade100,
-
-                        child: const Icon(
-                          Icons
-                              .image_outlined,
-                          color:
-                              Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 7),
-
-            /////////////////////////////////////////////////////
-            /// TITLE
-            /////////////////////////////////////////////////////
-
-            Text(
-              category.title,
-
-              maxLines: 1,
-
-              overflow:
-                  TextOverflow.ellipsis,
-
-              textAlign:
-                  TextAlign.center,
-
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight:
-                    FontWeight.w700,
-                color:
-                    Color(0xff241B2F),
+              blurRadius: 12,
+              offset:
+                  const Offset(
+                0,
+                5,
               ),
             ),
           ],
+        ),
+
+        child:
+            ClipRRect(
+          borderRadius:
+              BorderRadius
+                  .circular(
+            18,
+          ),
+
+          child:
+              Stack(
+            fit:
+                StackFit.expand,
+
+            children: [
+              //////////////////////////////////////////////////
+              /// IMAGE
+              //////////////////////////////////////////////////
+
+              _StatusImage(
+                url:
+                    category.image,
+              ),
+
+              //////////////////////////////////////////////////
+              /// DARK GRADIENT
+              //////////////////////////////////////////////////
+
+              DecoratedBox(
+                decoration:
+                    BoxDecoration(
+                  gradient:
+                      LinearGradient(
+                    begin:
+                        Alignment.topCenter,
+                    end:
+                        Alignment.bottomCenter,
+
+                    colors: [
+                      Colors
+                          .transparent,
+
+                      Colors.black
+                          .withOpacity(
+                        .05,
+                      ),
+
+                      Colors.black
+                          .withOpacity(
+                        .78,
+                      ),
+                    ],
+
+                    stops:
+                        const [
+                      0,
+                      .40,
+                      1,
+                    ],
+                  ),
+                ),
+              ),
+
+              //////////////////////////////////////////////////
+              /// TOP STATUS DOT
+              //////////////////////////////////////////////////
+
+              Positioned(
+                top: 8,
+                right: 8,
+
+                child:
+                    Container(
+                  width: 8,
+                  height: 8,
+
+                  decoration:
+                      BoxDecoration(
+                    color: primary,
+
+                    shape:
+                        BoxShape
+                            .circle,
+
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary
+                            .withOpacity(
+                          .45,
+                        ),
+                        blurRadius: 6,
+                        spreadRadius:
+                            1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              //////////////////////////////////////////////////
+              /// COLLECTION TITLE
+              //////////////////////////////////////////////////
+
+              Positioned(
+                left: 9,
+                right: 9,
+                bottom: 10,
+
+                child:
+                    Text(
+                  category.title,
+
+                  maxLines: 2,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Colors.white,
+
+                    fontSize: 12,
+
+                    height: 1.1,
+
+                    fontWeight:
+                        FontWeight.w800,
+
+                    shadows: [
+                      Shadow(
+                        color:
+                            Colors.black54,
+                        blurRadius: 5,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////////
+/// STATUS IMAGE
+////////////////////////////////////////////////////////////////
+
+class _StatusImage
+    extends StatelessWidget {
+  final String url;
+
+  const _StatusImage({
+    required this.url,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    if (url.trim().isEmpty) {
+      return _placeholder();
+    }
+
+    return Image.network(
+      url,
+
+      fit:
+          BoxFit.cover,
+
+      width:
+          double.infinity,
+
+      height:
+          double.infinity,
+
+      loadingBuilder:
+          (
+        context,
+        child,
+        loadingProgress,
+      ) {
+        if (loadingProgress ==
+            null) {
+          return AnimatedOpacity(
+            opacity: 1,
+            duration:
+                const Duration(
+              milliseconds:
+                  250,
+            ),
+            child:
+                child,
+          );
+        }
+
+        return Stack(
+          fit:
+              StackFit.expand,
+
+          children: [
+            _placeholder(),
+
+            Center(
+              child:
+                  SizedBox(
+                width: 22,
+                height: 22,
+
+                child:
+                    CircularProgressIndicator(
+                  strokeWidth:
+                      2,
+
+                  color:
+                      Colors.white,
+
+                  value: loadingProgress
+                              .expectedTotalBytes !=
+                          null
+                      ? loadingProgress
+                              .cumulativeBytesLoaded /
+                          loadingProgress
+                              .expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+
+      errorBuilder:
+          (
+        context,
+        error,
+        stackTrace,
+      ) {
+        return _placeholder(
+          error: true,
+        );
+      },
+    );
+  }
+
+  Widget _placeholder({
+    bool error = false,
+  }) {
+    return Container(
+      decoration:
+          const BoxDecoration(
+        gradient:
+            LinearGradient(
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
+          colors: [
+            Color(0xff292929),
+            Color(0xff111111),
+          ],
+        ),
+      ),
+
+      child:
+          Center(
+        child:
+            Icon(
+          error
+              ? Icons
+                  .image_not_supported_outlined
+              : Icons
+                  .image_outlined,
+
+          color:
+              Colors.white24,
+
+          size: 28,
         ),
       ),
     );

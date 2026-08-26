@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../home/home_screen.dart';
 import '../../cart/screens/cart_screen.dart';
 import '../../order_chat/screens/order_chat_list_screen.dart';
-
+import '../../profile/screens/profile_screen.dart';
+import '../../status/screens/status_screen.dart';
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
 
@@ -30,21 +31,14 @@ class _MainNavigationScreenState
   late final List<Widget> _screens = [
     const HomeScreen(),
 
-    const Scaffold(
-      body: Center(
-        child: Text("Categories"),
-      ),
-    ),
+   
+    const StatusScreen(),
 
      OrderChatListScreen(),
 
     const CartScreen(),
 
-    const Scaffold(
-      body: Center(
-        child: Text("Profile"),
-      ),
-    ),
+    const ProfileScreen(),
   ];
 
   @override
@@ -75,7 +69,7 @@ class _MainNavigationScreenState
           NavigationDestination(
             icon: Icon(Icons.grid_view_outlined),
             selectedIcon: Icon(Icons.grid_view),
-            label: "Categories",
+            label: "Status",
           ),
 
           NavigationDestination(

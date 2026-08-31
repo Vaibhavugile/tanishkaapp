@@ -360,23 +360,23 @@ Widget build(BuildContext context) {
           // PREMIUM APP BAR
           //--------------------------------------------------
 
-         PremiumAppBar(
-  wishlistCount: 0,
-  onMenuTap: () {
-    // TODO: Open menu
-  },
-  onWishlistTap: () {
-    // TODO: Navigate to Wishlist
-  },
-  onCartTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CartScreen(),
-      ),
-    );
-  },
-),
+//          PremiumAppBar(
+//   wishlistCount: 0,
+//   onMenuTap: () {
+//     // TODO: Open menu
+//   },
+//   onWishlistTap: () {
+//     // TODO: Navigate to Wishlist
+//   },
+//   onCartTap: () {
+//     Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) => const CartScreen(),
+//       ),
+//     );
+//   },
+// ),
 
           //--------------------------------------------------
           // CATEGORY SECTION
@@ -463,7 +463,7 @@ Widget build(BuildContext context) {
   crossAxisCount: isTablet ? 3 : 2,
   crossAxisSpacing: 14,
   mainAxisSpacing: 14,
-  childAspectRatio: isTablet ? 0.72 : 0.62,
+  childAspectRatio: isTablet ? 0.64 : 0.52,
 ),
                     itemBuilder: (context, index) {
                       //------------------------------------------------

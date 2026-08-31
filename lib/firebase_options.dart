@@ -51,18 +51,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD0e6amoPbOib6diAbqiX3G_HPYVEC4d_4',
-    appId: '1:440314889833:android:29c5786c959cfbb1fe84f8',
+    appId: '1:440314889833:android:a82dcf3c0898d11bfe84f8',
     messagingSenderId: '440314889833',
     projectId: 'jewellerywholesale-2e57c',
     storageBucket: 'jewellerywholesale-2e57c.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDRFSVFvr7TL355v3YVUe36O9giuv0jHlY',
-    appId: '1:440314889833:ios:c5fafa00c8218934fe84f8',
+    appId: '1:440314889833:ios:1315f81cc56e4bf9fe84f8',
     messagingSenderId: '440314889833',
     projectId: 'jewellerywholesale-2e57c',
     storageBucket: 'jewellerywholesale-2e57c.firebasestorage.app',
-    iosBundleId: 'com.example.tanishka',
+    iosBundleId: 'com.yani.wholesalejewellery',
   );
 }

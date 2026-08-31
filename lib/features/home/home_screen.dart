@@ -73,29 +73,29 @@ Future<void> _initialize() async {
               ),
               slivers: [
                 /// Premium App Bar
-                SliverToBoxAdapter(
-  child: PremiumAppBar(
-    wishlistCount: 0,
-    onMenuTap: () {
-      // TODO: Open menu/drawer
-    },
-    onWishlistTap: () {
-      // TODO: Navigate to Wishlist
-    },
-    onCartTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CartScreen(),
-        ),
-      );
-    },
-  ),
-),
+//                 SliverToBoxAdapter(
+//   child: PremiumAppBar(
+//     wishlistCount: 0,
+//     onMenuTap: () {
+//       // TODO: Open menu/drawer
+//     },
+//     onWishlistTap: () {
+//       // TODO: Navigate to Wishlist
+//     },
+//     onCartTap: () {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (_) => const CartScreen(),
+//         ),
+//       );
+//     },
+//   ),
+// ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 28),
-                ),
+//                 const SliverToBoxAdapter(
+//                   child: SizedBox(height: 28),
+//                 ),
 
                 /// Categories
                 SliverToBoxAdapter(

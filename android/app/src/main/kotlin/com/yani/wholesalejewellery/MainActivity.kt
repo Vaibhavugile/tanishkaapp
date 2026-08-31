@@ -1,4 +1,4 @@
-package com.example.tanishka
+package com.yani.wholesalejewellery
 
 import io.flutter.embedding.android.FlutterActivity
 

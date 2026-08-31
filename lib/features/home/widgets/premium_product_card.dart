@@ -471,17 +471,17 @@ class _PremiumProductCardState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          behavior:
-              SnackBarBehavior.floating,
-          backgroundColor: green,
-          content: Text(
-            "${product.name} added to cart",
-          ),
-        ),
-      );
+      // ScaffoldMessenger.of(context)
+      //     .showSnackBar(
+      //   SnackBar(
+      //     behavior:
+      //         SnackBarBehavior.floating,
+      //     backgroundColor: green,
+      //     content: Text(
+      //       "${product.name} added to cart",
+      //     ),
+      //   ),
+      // );
     } catch (e) {
       if (!mounted) return;
 

@@ -20,102 +20,137 @@ class CartBottomBar extends StatelessWidget {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(
-          20,
-          18,
-          20,
-          18,
+          14,
+          10,
+          14,
+          10,
         ),
+
         decoration: BoxDecoration(
           color: Colors.white,
+
           borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(30),
+            top: Radius.circular(20),
           ),
+
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(.08),
-              blurRadius: 24,
-              offset: const Offset(0, -6),
+              color: Colors.black.withOpacity(.10),
+              blurRadius: 18,
+              offset: const Offset(0, -5),
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+
+        child: Row(
           children: [
-            Row(
-              children: [
-                const Text(
-                  "Items",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey,
-                  ),
-                ),
+            //////////////////////////////////////////////////////
+            /// TOTAL SECTION
+            //////////////////////////////////////////////////////
 
-                const Spacer(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        "$totalItems item${totalItems == 1 ? "" : "s"}",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
 
-                Text(
-                  totalItems.toString(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                      const SizedBox(width: 6),
+
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey,
+                        ),
+                      ),
+
+                      const SizedBox(width: 6),
+
+                      Text(
+                        "Cart total",
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    "₹${totalPrice.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                      color: primary,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      height: 1.05,
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                const Text(
-                  "Total",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const Spacer(),
-
-                Text(
-                  "₹${totalPrice.toStringAsFixed(0)}",
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: primary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
+            //////////////////////////////////////////////////////
+            /// CHECKOUT BUTTON
+            //////////////////////////////////////////////////////
 
             SizedBox(
-              width: double.infinity,
-              height: 56,
+              height: 46,
+
               child: ElevatedButton(
                 onPressed: onCheckout,
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: Colors.white,
+
                   elevation: 0,
+
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                  ),
+
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(13),
                   ),
                 ),
+
                 child: const Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.shopping_bag_outlined),
-                    SizedBox(width: 10),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 19,
+                    ),
+
+                    SizedBox(width: 7),
+
                     Text(
-                      "Proceed To Checkout",
+                      "Checkout",
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
+                    ),
+
+                    SizedBox(width: 4),
+
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
                     ),
                   ],
                 ),

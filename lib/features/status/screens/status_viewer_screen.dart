@@ -392,19 +392,6 @@ class _StatusViewerScreenState
         variation: variation,
         quantity: quantity,
       );
-
-      if (!mounted) return;
-
-      //////////////////////////////////////////////////////////
-      /// SUCCESS
-      //////////////////////////////////////////////////////////
-
-      _showMessage(
-        variation == null
-            ? "${item.product.productName} × $quantity added to cart"
-            : "${item.product.productName} • ${variation.label} × $quantity added to cart",
-        isError: false,
-      );
     } catch (e) {
       if (!mounted) return;
 
@@ -487,7 +474,6 @@ class _StatusViewerScreenState
     return Scaffold(
       backgroundColor:
           Colors.black,
-
       body: SafeArea(
         child: _buildBody(),
       ),
@@ -499,26 +485,14 @@ class _StatusViewerScreenState
   //////////////////////////////////////////////////////////////
 
   Widget _buildBody() {
-    ////////////////////////////////////////////////////////////
-    /// INITIAL LOADING
-    ////////////////////////////////////////////////////////////
-
     if (_loading &&
         _products.isEmpty) {
       return _buildInitialLoader();
     }
 
-    ////////////////////////////////////////////////////////////
-    /// EMPTY
-    ////////////////////////////////////////////////////////////
-
     if (_products.isEmpty) {
       return _buildEmpty();
     }
-
-    ////////////////////////////////////////////////////////////
-    /// PRODUCTS
-    ////////////////////////////////////////////////////////////
 
     return Stack(
       children: [
@@ -529,16 +503,12 @@ class _StatusViewerScreenState
         PageView.builder(
           controller:
               _pageController,
-
           itemCount:
               _products.length,
-
           onPageChanged:
               _onPageChanged,
-
           physics:
               const BouncingScrollPhysics(),
-
           itemBuilder:
               (context, index) {
             final item =
@@ -549,12 +519,11 @@ class _StatusViewerScreenState
                 _uniqueProductKey(item),
               ),
               item: item,
-
               onAddToCart:
                   ({
-                    required variation,
-                    required quantity,
-                  }) {
+                required variation,
+                required quantity,
+              }) {
                 return _addToCart(
                   item: item,
                   variation: variation,
@@ -574,7 +543,6 @@ class _StatusViewerScreenState
           left: 0,
           right: 0,
           height: 145,
-
           child:
               IgnorePointer(
             child:
@@ -606,7 +574,6 @@ class _StatusViewerScreenState
           top: 10,
           left: 12,
           right: 12,
-
           child: Row(
             children:
                 List.generate(
@@ -660,17 +627,11 @@ class _StatusViewerScreenState
           top: 25,
           left: 16,
           right: 12,
-
           child: Row(
             children: [
-              //////////////////////////////////////////////////
-              /// COLLECTION IMAGE
-              //////////////////////////////////////////////////
-
               Container(
                 width: 42,
                 height: 42,
-
                 decoration:
                     const BoxDecoration(
                   shape:
@@ -678,11 +639,9 @@ class _StatusViewerScreenState
                   color:
                       Colors.white,
                 ),
-
                 padding:
                     const EdgeInsets
                         .all(2),
-
                 child:
                     ClipOval(
                   child:
@@ -703,10 +662,6 @@ class _StatusViewerScreenState
                 width: 10,
               ),
 
-              //////////////////////////////////////////////////
-              /// TITLE
-              //////////////////////////////////////////////////
-
               Expanded(
                 child: Text(
                   widget.category
@@ -726,10 +681,6 @@ class _StatusViewerScreenState
                 ),
               ),
 
-              //////////////////////////////////////////////////
-              /// LOADING MORE
-              //////////////////////////////////////////////////
-
               if (_loadingMore)
                 Container(
                   width: 24,
@@ -746,10 +697,6 @@ class _StatusViewerScreenState
                         Colors.white,
                   ),
                 ),
-
-              //////////////////////////////////////////////////
-              /// CLOSE
-              //////////////////////////////////////////////////
 
               IconButton(
                 onPressed: () {
@@ -782,7 +729,6 @@ class _StatusViewerScreenState
                     context,
                   ).size.width *
                   .30,
-
           child:
               GestureDetector(
             behavior:
@@ -806,7 +752,6 @@ class _StatusViewerScreenState
                     context,
                   ).size.width *
                   .30,
-
           child:
               GestureDetector(
             behavior:
@@ -840,17 +785,14 @@ class _StatusViewerScreenState
           ],
         ),
       ),
-
       child: Center(
         child: Column(
           mainAxisSize:
               MainAxisSize.min,
-
           children: [
             Container(
               width: 70,
               height: 70,
-
               decoration:
                   BoxDecoration(
                 shape:
@@ -863,7 +805,6 @@ class _StatusViewerScreenState
                       .withOpacity(.15),
                 ),
               ),
-
               child:
                   const Padding(
                 padding:
@@ -877,28 +818,25 @@ class _StatusViewerScreenState
                 ),
               ),
             ),
-
             const SizedBox(
               height: 20,
             ),
-
             Text(
               "Loading ${widget.category.title}",
               textAlign:
                   TextAlign.center,
               style:
                   const TextStyle(
-                color: Colors.white,
+                color:
+                    Colors.white,
                 fontSize: 16,
                 fontWeight:
                     FontWeight.w700,
               ),
             ),
-
             const SizedBox(
               height: 7,
             ),
-
             const Text(
               "Getting products ready...",
               style:
@@ -925,12 +863,10 @@ class _StatusViewerScreenState
             const EdgeInsets.all(
           30,
         ),
-
         child: Column(
           mainAxisAlignment:
               MainAxisAlignment
                   .center,
-
           children: [
             const Icon(
               Icons
@@ -939,11 +875,9 @@ class _StatusViewerScreenState
                   Colors.white70,
               size: 70,
             ),
-
             const SizedBox(
               height: 20,
             ),
-
             const Text(
               "No products available",
               textAlign:
@@ -957,11 +891,9 @@ class _StatusViewerScreenState
                     FontWeight.w800,
               ),
             ),
-
             const SizedBox(
               height: 8,
             ),
-
             Text(
               _error ??
                   "This collection currently has no products in stock.",
@@ -974,18 +906,15 @@ class _StatusViewerScreenState
                 fontSize: 14,
               ),
             ),
-
             const SizedBox(
               height: 25,
             ),
-
             OutlinedButton(
               onPressed: () {
                 Navigator.pop(
                   context,
                 );
               },
-
               style:
                   OutlinedButton
                       .styleFrom(
@@ -997,7 +926,6 @@ class _StatusViewerScreenState
                       Colors.white54,
                 ),
               ),
-
               child:
                   const Text(
                 "Go Back",
@@ -1093,19 +1021,9 @@ class _StatusProductPageState
   void initState() {
     super.initState();
 
-    ////////////////////////////////////////////////////////////
-    /// SIMPLE PRODUCT
-    ////////////////////////////////////////////////////////////
-
     if (!item.product.hasVariants) {
       _quantity = 1;
-    }
-
-    ////////////////////////////////////////////////////////////
-    /// VARIANT PRODUCT
-    ////////////////////////////////////////////////////////////
-
-    else {
+    } else {
       final variations =
           _availableVariations;
 
@@ -1118,38 +1036,59 @@ class _StatusProductPageState
     _restoreCartState();
   }
 
+  //////////////////////////////////////////////////////////////
+  /// RESTORE CART STATE
+  //////////////////////////////////////////////////////////////
+
   Future<void> _restoreCartState() async {
     try {
-      final items = await CartService.instance.cartStream().first;
+      final items =
+          await CartService.instance
+              .cartStream()
+              .first;
+
       if (!mounted) return;
 
-      final variationKey = _selectedVariation == null
-          ? ""
-          : "${_selectedVariation!.color}_${_selectedVariation!.size}";
+      final variationKey =
+          _selectedVariation == null
+              ? ""
+              : "${_selectedVariation!.color}_${_selectedVariation!.size}";
 
       CartItemModel? existing;
+
       for (final cartItem in items) {
-        if (cartItem.productId == item.product.id &&
-            cartItem.subCollectionId == item.subCollection.id &&
-            cartItem.variationKey == variationKey) {
+        if (cartItem.productId ==
+                item.product.id &&
+            cartItem.subCollectionId ==
+                item.subCollection.id &&
+            cartItem.variationKey ==
+                variationKey) {
           existing = cartItem;
           break;
         }
       }
 
-      if (!mounted || existing == null) return;
+      if (!mounted ||
+          existing == null) {
+        return;
+      }
 
-      final safeQuantity = existing.quantity.clamp(
-        1,
-        _currentStock > 0 ? _currentStock : existing.quantity,
-      ).toInt();
+      final safeQuantity =
+          existing.quantity
+              .clamp(
+                1,
+                _currentStock > 0
+                    ? _currentStock
+                    : existing.quantity,
+              )
+              .toInt();
 
       setState(() {
         _quantity = safeQuantity;
         _inCart = true;
       });
     } catch (_) {
-      // Cart restoration is optional; product viewer still works.
+      // Optional restoration.
     }
   }
 
@@ -1161,7 +1100,8 @@ class _StatusProductPageState
     VariationModel variation,
   ) async {
     setState(() {
-      _selectedVariation = variation;
+      _selectedVariation =
+          variation;
       _quantity = 1;
       _inCart = false;
     });
@@ -1170,44 +1110,78 @@ class _StatusProductPageState
   }
 
   //////////////////////////////////////////////////////////////
-  /// DECREASE
+  /// GET CURRENT CART ITEM
   //////////////////////////////////////////////////////////////
 
-  Future<CartItemModel?> _getCurrentCartItem() async {
-    final items = await CartService.instance.cartStream().first;
-    final variationKey = _selectedVariation == null
-        ? ""
-        : "${_selectedVariation!.color}_${_selectedVariation!.size}";
+  Future<CartItemModel?>
+      _getCurrentCartItem() async {
+    final items =
+        await CartService.instance
+            .cartStream()
+            .first;
+
+    final variationKey =
+        _selectedVariation == null
+            ? ""
+            : "${_selectedVariation!.color}_${_selectedVariation!.size}";
 
     for (final cartItem in items) {
-      if (cartItem.productId == item.product.id &&
-          cartItem.subCollectionId == item.subCollection.id &&
-          cartItem.variationKey == variationKey) {
+      if (cartItem.productId ==
+              item.product.id &&
+          cartItem.subCollectionId ==
+              item.subCollection.id &&
+          cartItem.variationKey ==
+              variationKey) {
         return cartItem;
       }
     }
+
     return null;
   }
 
-  Future<void> _decreaseQuantity() async {
-    if (!_inCart || _quantity <= 0 || _updatingCartQuantity) return;
+  //////////////////////////////////////////////////////////////
+  /// DECREASE QUANTITY
+  //////////////////////////////////////////////////////////////
 
-    final nextQuantity = _quantity - 1;
-    setState(() => _updatingCartQuantity = true);
+  Future<void>
+      _decreaseQuantity() async {
+    if (!_inCart ||
+        _quantity <= 0 ||
+        _updatingCartQuantity) {
+      return;
+    }
+
+    final nextQuantity =
+        _quantity - 1;
+
+    setState(() {
+      _updatingCartQuantity =
+          true;
+    });
 
     try {
-      final cartItem = await _getCurrentCartItem();
+      final cartItem =
+          await _getCurrentCartItem();
+
       if (cartItem == null) {
-        if (mounted) setState(() { _quantity = 1; _inCart = false; });
+        if (mounted) {
+          setState(() {
+            _quantity = 1;
+            _inCart = false;
+          });
+        }
+
         return;
       }
 
-      await CartService.instance.updateQuantity(
+      await CartService.instance
+          .updateQuantity(
         item: cartItem,
         quantity: nextQuantity,
       );
 
       if (!mounted) return;
+
       setState(() {
         if (nextQuantity <= 0) {
           _quantity = 1;
@@ -1217,36 +1191,92 @@ class _StatusProductPageState
         }
       });
     } catch (e) {
-      if (mounted) _showMessage(e.toString().replaceFirst("Exception: ", ""), isError: true);
+      if (mounted) {
+        _showMessage(
+          e.toString()
+              .replaceFirst(
+            "Exception: ",
+            "",
+          ),
+          isError: true,
+        );
+      }
     } finally {
-      if (mounted) setState(() => _updatingCartQuantity = false);
+      if (mounted) {
+        setState(() {
+          _updatingCartQuantity =
+              false;
+        });
+      }
     }
   }
 
-  Future<void> _increaseQuantity() async {
-    if (!_inCart || _currentStock <= 0 || _quantity >= _currentStock || _updatingCartQuantity) return;
+  //////////////////////////////////////////////////////////////
+  /// INCREASE QUANTITY
+  //////////////////////////////////////////////////////////////
 
-    final nextQuantity = _quantity + 1;
-    setState(() => _updatingCartQuantity = true);
+  Future<void>
+      _increaseQuantity() async {
+    if (!_inCart ||
+        _currentStock <= 0 ||
+        _quantity >= _currentStock ||
+        _updatingCartQuantity) {
+      return;
+    }
+
+    final nextQuantity =
+        _quantity + 1;
+
+    setState(() {
+      _updatingCartQuantity =
+          true;
+    });
 
     try {
-      final cartItem = await _getCurrentCartItem();
+      final cartItem =
+          await _getCurrentCartItem();
+
       if (cartItem == null) {
-        if (mounted) setState(() { _inCart = false; _quantity = 1; });
+        if (mounted) {
+          setState(() {
+            _inCart = false;
+            _quantity = 1;
+          });
+        }
+
         return;
       }
 
-      await CartService.instance.updateQuantity(
+      await CartService.instance
+          .updateQuantity(
         item: cartItem,
         quantity: nextQuantity,
       );
 
       if (!mounted) return;
-      setState(() => _quantity = nextQuantity);
+
+      setState(() {
+        _quantity =
+            nextQuantity;
+      });
     } catch (e) {
-      if (mounted) _showMessage(e.toString().replaceFirst("Exception: ", ""), isError: true);
+      if (mounted) {
+        _showMessage(
+          e.toString()
+              .replaceFirst(
+            "Exception: ",
+            "",
+          ),
+          isError: true,
+        );
+      }
     } finally {
-      if (mounted) setState(() => _updatingCartQuantity = false);
+      if (mounted) {
+        setState(() {
+          _updatingCartQuantity =
+              false;
+        });
+      }
     }
   }
 
@@ -1254,37 +1284,59 @@ class _StatusProductPageState
   /// ADD TO CART
   //////////////////////////////////////////////////////////////
 
-  Future<void> _handleAddToCart() async {
-    if (item.product.hasVariants && _selectedVariation == null) {
-      _showMessage("Please select a variation.", isError: true);
+  Future<void>
+      _handleAddToCart() async {
+    if (item.product.hasVariants &&
+        _selectedVariation == null) {
+      _showMessage(
+        "Please select a variation.",
+        isError: true,
+      );
       return;
     }
 
     if (_currentStock <= 0) {
-      _showMessage("This product is currently out of stock.", isError: true);
+      _showMessage(
+        "This product is currently out of stock.",
+        isError: true,
+      );
       return;
     }
 
-    setState(() => _addingToCart = true);
+    setState(() {
+      _addingToCart = true;
+    });
 
     try {
-      // First tap always creates exactly one cart item.
       await widget.onAddToCart(
-        variation: _selectedVariation,
+        variation:
+            _selectedVariation,
         quantity: 1,
       );
 
       if (!mounted) return;
+
       setState(() {
         _quantity = 1;
         _inCart = true;
       });
     } catch (e) {
       if (mounted) {
-        _showMessage(e.toString().replaceFirst("Exception: ", ""), isError: true);
+        _showMessage(
+          e.toString()
+              .replaceFirst(
+            "Exception: ",
+            "",
+          ),
+          isError: true,
+        );
       }
     } finally {
-      if (mounted) setState(() => _addingToCart = false);
+      if (mounted) {
+        setState(() {
+          _addingToCart = false;
+        });
+      }
     }
   }
 
@@ -1312,13 +1364,12 @@ class _StatusProductPageState
               isError
                   ? Icons.error_outline
                   : Icons.check_circle,
-              color: Colors.white,
+              color:
+                  Colors.white,
             ),
-
             const SizedBox(
               width: 10,
             ),
-
             Expanded(
               child: Text(
                 message,
@@ -1329,18 +1380,14 @@ class _StatusProductPageState
             ),
           ],
         ),
-
         backgroundColor:
             isError
                 ? Colors.red.shade700
                 : Colors.green.shade700,
-
         behavior:
             SnackBarBehavior.floating,
-
         margin:
             const EdgeInsets.all(16),
-
         shape:
             RoundedRectangleBorder(
           borderRadius:
@@ -1364,13 +1411,10 @@ class _StatusProductPageState
         item.product;
 
     final stock =
-        product.hasVariants
-            ? product.totalStock
-            : product.totalStock;
+        product.totalStock;
 
     return Stack(
       fit: StackFit.expand,
-
       children: [
         ////////////////////////////////////////////////////////
         /// PRODUCT IMAGE
@@ -1391,18 +1435,15 @@ class _StatusProductPageState
                 LinearGradient(
               begin:
                   Alignment.topCenter,
-
               end:
                   Alignment.bottomCenter,
-
               colors: [
                 Colors.transparent,
                 Colors.black
-                    .withOpacity(.08),
+                    .withOpacity(.05),
                 Colors.black
                     .withOpacity(.92),
               ],
-
               stops: const [
                 .20,
                 .48,
@@ -1420,14 +1461,11 @@ class _StatusProductPageState
           left: 18,
           right: 18,
           bottom: 20,
-
           child: SafeArea(
             top: false,
-
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
-
               children: [
                 //////////////////////////////////////////////////
                 /// PRODUCT CODE
@@ -1443,26 +1481,22 @@ class _StatusProductPageState
                       horizontal: 10,
                       vertical: 5,
                     ),
-
                     decoration:
                         BoxDecoration(
-                      color: Colors.white
+                      color: Colors
+                          .white
                           .withOpacity(
                         .16,
                       ),
-
                       borderRadius:
                           BorderRadius
                               .circular(
                         20,
                       ),
                     ),
-
-                    child:
-                        Text(
+                    child: Text(
                       product
                           .productCode,
-
                       style:
                           const TextStyle(
                         color:
@@ -1485,22 +1519,16 @@ class _StatusProductPageState
                 Text(
                   product
                       .productName,
-
                   maxLines: 2,
-
                   overflow:
                       TextOverflow
                           .ellipsis,
-
                   style:
                       const TextStyle(
                     color:
                         Colors.white,
-
                     fontSize: 24,
-
                     height: 1.12,
-
                     fontWeight:
                         FontWeight.w900,
                   ),
@@ -1523,16 +1551,13 @@ class _StatusProductPageState
                           Colors.white70,
                       size: 17,
                     ),
-
                     const SizedBox(
                       width: 6,
                     ),
-
                     Text(
                       product.hasVariants
                           ? "$stock total available"
                           : "$stock available",
-
                       style:
                           const TextStyle(
                         color:
@@ -1549,7 +1574,8 @@ class _StatusProductPageState
                 /// VARIATIONS
                 //////////////////////////////////////////////////
 
-                if (product.hasVariants) ...[
+                if (product
+                    .hasVariants) ...[
                   const SizedBox(
                     height: 13,
                   ),
@@ -1577,13 +1603,11 @@ class _StatusProductPageState
                     Container(
                       width:
                           double.infinity,
-
                       padding:
                           const EdgeInsets
                               .all(
                         12,
                       ),
-
                       decoration:
                           BoxDecoration(
                         color: Colors
@@ -1591,14 +1615,12 @@ class _StatusProductPageState
                             .withOpacity(
                           .10,
                         ),
-
                         borderRadius:
                             BorderRadius
                                 .circular(
                           13,
                         ),
                       ),
-
                       child:
                           const Text(
                         "No variants available",
@@ -1614,7 +1636,6 @@ class _StatusProductPageState
                     SingleChildScrollView(
                       scrollDirection:
                           Axis.horizontal,
-
                       child: Row(
                         children:
                             _availableVariations
@@ -1632,7 +1653,6 @@ class _StatusProductPageState
                                       .only(
                                 right: 8,
                               ),
-
                               child:
                                   GestureDetector(
                                 onTap: () {
@@ -1640,7 +1660,6 @@ class _StatusProductPageState
                                     variation,
                                   );
                                 },
-
                                 child:
                                     AnimatedContainer(
                                   duration:
@@ -1648,7 +1667,6 @@ class _StatusProductPageState
                                     milliseconds:
                                         180,
                                   ),
-
                                   padding:
                                       const EdgeInsets
                                           .symmetric(
@@ -1657,7 +1675,6 @@ class _StatusProductPageState
                                     vertical:
                                         9,
                                   ),
-
                                   decoration:
                                       BoxDecoration(
                                     color:
@@ -1668,7 +1685,6 @@ class _StatusProductPageState
                                                 .withOpacity(
                                                 .12,
                                               ),
-
                                     border:
                                         Border.all(
                                       color:
@@ -1680,31 +1696,26 @@ class _StatusProductPageState
                                                   .withOpacity(
                                                   .25,
                                                 ),
-
                                       width:
                                           selected
                                               ? 1.7
                                               : 1,
                                     ),
-
                                     borderRadius:
                                         BorderRadius
                                             .circular(
                                       13,
                                     ),
                                   ),
-
                                   child:
                                       Column(
                                     mainAxisSize:
                                         MainAxisSize
                                             .min,
-
                                     children: [
                                       Text(
                                         variation
                                             .label,
-
                                         style:
                                             const TextStyle(
                                           color:
@@ -1715,15 +1726,12 @@ class _StatusProductPageState
                                               FontWeight.w800,
                                         ),
                                       ),
-
                                       const SizedBox(
                                         height:
                                             2,
                                       ),
-
                                       Text(
                                         "${variation.quantity} left",
-
                                         style:
                                             TextStyle(
                                           color:
@@ -1748,271 +1756,271 @@ class _StatusProductPageState
                 ],
 
                 //////////////////////////////////////////////////
-                /// QUANTITY
+                /// ADD TO CART / QUANTITY
+                ///
+                /// THIS IS THE ONLY QUANTITY CONTROL
                 //////////////////////////////////////////////////
 
                 const SizedBox(
-                  height: 13,
+                  height: 14,
                 ),
-
-                Row(
-                  children: [
-                    const Text(
-                      "QUANTITY",
-                      style:
-                          TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 11,
-                        fontWeight:
-                            FontWeight.w900,
-                        letterSpacing:
-                            .7,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    Container(
-                      height: 42,
-
-                      decoration:
-                          BoxDecoration(
-                        color: Colors
-                            .white
-                            .withOpacity(
-                          .12,
-                        ),
-
-                        borderRadius:
-                            BorderRadius
-                                .circular(
-                          14,
-                        ),
-
-                        border:
-                            Border.all(
-                          color: Colors
-                              .white
-                              .withOpacity(
-                            .20,
-                          ),
-                        ),
-                      ),
-
-                      child: Row(
-                        children: [
-                          //////////////////////////////////////////////////
-                          /// MINUS
-                          //////////////////////////////////////////////////
-
-                          IconButton(
-                            onPressed:
-                                _quantity > 1
-                                    ? _decreaseQuantity
-                                    : null,
-
-                            icon:
-                                const Icon(
-                              Icons.remove,
-                              color:
-                                  Colors.white,
-                              size: 19,
-                            ),
-
-                            padding:
-                                EdgeInsets.zero,
-
-                            constraints:
-                                const BoxConstraints(
-                              minWidth: 42,
-                            ),
-                          ),
-
-                          //////////////////////////////////////////////////
-                          /// COUNT
-                          //////////////////////////////////////////////////
-
-                          SizedBox(
-                            width: 32,
-
-                            child: Text(
-                              "$_quantity",
-
-                              textAlign:
-                                  TextAlign
-                                      .center,
-
-                              style:
-                                  const TextStyle(
-                                color:
-                                    Colors.white,
-                                fontSize:
-                                    15,
-                                fontWeight:
-                                    FontWeight
-                                        .w900,
-                              ),
-                            ),
-                          ),
-
-                          //////////////////////////////////////////////////
-                          /// PLUS
-                          //////////////////////////////////////////////////
-
-                          IconButton(
-                            onPressed:
-                                _quantity <
-                                        _currentStock
-                                    ? _increaseQuantity
-                                    : null,
-
-                            icon:
-                                const Icon(
-                              Icons.add,
-                              color:
-                                  Colors.white,
-                              size: 19,
-                            ),
-
-                            padding:
-                                EdgeInsets.zero,
-
-                            constraints:
-                                const BoxConstraints(
-                              minWidth: 42,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                //////////////////////////////////////////////////
-                /// ADD TO CART / QUANTITY CONTROL
-                //////////////////////////////////////////////////
-
-                const SizedBox(height: 11),
 
                 SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
+                  width:
+                      double.infinity,
+                  height: 54,
+                  child:
+                      AnimatedSwitcher(
+                    duration:
+                        const Duration(
+                      milliseconds: 220,
+                    ),
+                    transitionBuilder:
+                        (
+                      child,
+                      animation,
+                    ) {
+                      return FadeTransition(
+                        opacity:
+                            animation,
+                        child:
+                            ScaleTransition(
+                          scale:
+                              Tween<double>(
+                            begin: .96,
+                            end: 1,
+                          ).animate(
+                            animation,
+                          ),
+                          child:
+                              child,
+                        ),
+                      );
+                    },
                     child: !_inCart
                         ? ElevatedButton(
-                            key: const ValueKey("add_to_cart"),
-                            onPressed: _addingToCart
-                                ? null
-                                : product.hasVariants && _selectedVariation == null
+                            key:
+                                const ValueKey(
+                              "add_to_cart",
+                            ),
+                            onPressed:
+                                _addingToCart
                                     ? null
-                                    : _currentStock <= 0
+                                    : product.hasVariants &&
+                                            _selectedVariation ==
+                                                null
                                         ? null
-                                        : _handleAddToCart,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primary,
-                              disabledBackgroundColor: Colors.grey.shade700,
-                              foregroundColor: Colors.white,
-                              elevation: 7,
-                              shadowColor: Colors.black.withOpacity(.30),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                        : _currentStock <=
+                                                0
+                                            ? null
+                                            : _handleAddToCart,
+                            style:
+                                ElevatedButton
+                                    .styleFrom(
+                              backgroundColor:
+                                  primary,
+                              disabledBackgroundColor:
+                                  Colors
+                                      .grey
+                                      .shade700,
+                              foregroundColor:
+                                  Colors.white,
+                              elevation:
+                                  7,
+                              shadowColor:
+                                  Colors
+                                      .black
+                                      .withOpacity(
+                                .30,
+                              ),
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  16,
+                                ),
                               ),
                             ),
-                            child: _addingToCart
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.shopping_cart_outlined,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        product.hasVariants && _selectedVariation == null
-                                            ? "SELECT VARIATION"
-                                            : _currentStock <= 0
-                                                ? "OUT OF STOCK"
-                                                : "ADD TO CART",
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: .3,
+                            child:
+                                _addingToCart
+                                    ? const SizedBox(
+                                        width:
+                                            20,
+                                        height:
+                                            20,
+                                        child:
+                                            CircularProgressIndicator(
+                                          strokeWidth:
+                                              2,
+                                          color:
+                                              Colors.white,
                                         ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment
+                                                .center,
+                                        children: [
+                                          const Icon(
+                                            Icons
+                                                .shopping_cart_outlined,
+                                            size:
+                                                20,
+                                          ),
+                                          const SizedBox(
+                                            width:
+                                                8,
+                                          ),
+                                          Text(
+                                            product.hasVariants &&
+                                                    _selectedVariation ==
+                                                        null
+                                                ? "SELECT VARIATION"
+                                                : _currentStock <=
+                                                        0
+                                                    ? "OUT OF STOCK"
+                                                    : "ADD TO CART",
+                                            style:
+                                                const TextStyle(
+                                              fontSize:
+                                                  14,
+                                              fontWeight:
+                                                  FontWeight.w900,
+                                              letterSpacing:
+                                                  .3,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
                           )
                         : Container(
-                            key: const ValueKey("cart_quantity"),
-                            decoration: BoxDecoration(
-                              color: primary,
-                              borderRadius: BorderRadius.circular(16),
+                            key:
+                                const ValueKey(
+                              "cart_quantity",
+                            ),
+                            decoration:
+                                BoxDecoration(
+                              color:
+                                  primary,
+                              borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                16,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(.25),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
+                                  color: Colors
+                                      .black
+                                      .withOpacity(
+                                    .25,
+                                  ),
+                                  blurRadius:
+                                      10,
+                                  offset:
+                                      const Offset(
+                                    0,
+                                    5,
+                                  ),
                                 ),
                               ],
                             ),
-                            child: Row(
+                            child:
+                                Row(
                               children: [
+                                //////////////////////////////////////////////////
+                                /// MINUS
+                                //////////////////////////////////////////////////
+
                                 SizedBox(
-                                  width: 58,
-                                  height: 52,
-                                  child: IconButton(
-                                    onPressed: _updatingCartQuantity ? null : _decreaseQuantity,
-                                    icon: Icon(
-                                      Icons.remove_rounded,
-                                      color: _updatingCartQuantity ? Colors.white38 : Colors.white,
-                                      size: 23,
+                                  width: 64,
+                                  height: 54,
+                                  child:
+                                      IconButton(
+                                    onPressed:
+                                        _updatingCartQuantity
+                                            ? null
+                                            : _decreaseQuantity,
+                                    icon:
+                                        Icon(
+                                      Icons
+                                          .remove_rounded,
+                                      color: _updatingCartQuantity
+                                          ? Colors
+                                              .white38
+                                          : Colors
+                                              .white,
+                                      size:
+                                          24,
                                     ),
                                   ),
                                 ),
+
+                                //////////////////////////////////////////////////
+                                /// QUANTITY
+                                //////////////////////////////////////////////////
+
                                 Expanded(
-                                  child: Center(
-                                    child: _updatingCartQuantity
-                                        ? const SizedBox(
-                                            width: 19,
-                                            height: 19,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : Text(
-                                            "$_quantity",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
+                                  child:
+                                      Center(
+                                    child:
+                                        _updatingCartQuantity
+                                            ? const SizedBox(
+                                                width:
+                                                    20,
+                                                height:
+                                                    20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth:
+                                                      2,
+                                                  color:
+                                                      Colors.white,
+                                                ),
+                                              )
+                                            : Text(
+                                                "$_quantity",
+                                                style:
+                                                    const TextStyle(
+                                                  color:
+                                                      Colors.white,
+                                                  fontSize:
+                                                      20,
+                                                  fontWeight:
+                                                      FontWeight.w900,
+                                                ),
+                                              ),
                                   ),
                                 ),
+
+                                //////////////////////////////////////////////////
+                                /// PLUS
+                                //////////////////////////////////////////////////
+
                                 SizedBox(
-                                  width: 58,
-                                  height: 52,
-                                  child: IconButton(
-                                    onPressed: _updatingCartQuantity || _quantity >= _currentStock
-                                        ? null
-                                        : _increaseQuantity,
-                                    icon: Icon(
-                                      Icons.add_rounded,
-                                      color: _updatingCartQuantity || _quantity >= _currentStock
-                                          ? Colors.white38
-                                          : Colors.white,
-                                      size: 23,
+                                  width: 64,
+                                  height: 54,
+                                  child:
+                                      IconButton(
+                                    onPressed:
+                                        _updatingCartQuantity ||
+                                                _quantity >=
+                                                    _currentStock
+                                            ? null
+                                            : _increaseQuantity,
+                                    icon:
+                                        Icon(
+                                      Icons
+                                          .add_rounded,
+                                      color: _updatingCartQuantity ||
+                                              _quantity >=
+                                                  _currentStock
+                                          ? Colors
+                                              .white38
+                                          : Colors
+                                              .white,
+                                      size:
+                                          24,
                                     ),
                                   ),
                                 ),
@@ -2020,11 +2028,9 @@ class _StatusProductPageState
                             ),
                           ),
                   ),
-                
                 ),
               ],
-            )
-            
+            ),
           ),
         ),
       ],
@@ -2033,10 +2039,7 @@ class _StatusProductPageState
 }
 
 ////////////////////////////////////////////////////////////////
-/// NETWORK IMAGE
-///
-/// Gives every image a proper placeholder instead of showing
-/// a black/empty area while Firebase Storage is loading.
+/// PRODUCT IMAGE
 ////////////////////////////////////////////////////////////////
 
 class _ProductImage
@@ -2053,7 +2056,12 @@ class _ProductImage
   ) {
     return _NetworkImage(
       url: url,
-      fit: BoxFit.cover,
+
+      // IMPORTANT:
+      // Show the COMPLETE image instead
+      // of cropping it to fill the screen.
+      fit: BoxFit.contain,
+
       icon:
           Icons
               .image_not_supported_outlined,
@@ -2068,9 +2076,7 @@ class _ProductImage
 class _NetworkImage
     extends StatelessWidget {
   final String url;
-
   final BoxFit fit;
-
   final IconData icon;
 
   const _NetworkImage({
@@ -2089,12 +2095,9 @@ class _NetworkImage
 
     return Image.network(
       url,
-
       fit: fit,
-
       width:
           double.infinity,
-
       height:
           double.infinity,
 
@@ -2129,7 +2132,6 @@ class _NetworkImage
         return Stack(
           fit:
               StackFit.expand,
-
           children: [
             _placeholder(),
 
@@ -2138,31 +2140,25 @@ class _NetworkImage
                   Container(
                 width: 46,
                 height: 46,
-
                 decoration:
                     BoxDecoration(
                   color: Colors.black
                       .withOpacity(
                     .30,
                   ),
-
                   shape:
                       BoxShape.circle,
                 ),
-
                 padding:
                     const EdgeInsets
                         .all(
                   13,
                 ),
-
                 child:
                     CircularProgressIndicator(
                   strokeWidth: 2,
-
                   color:
                       Colors.white,
-
                   value: loadingProgress
                               .expectedTotalBytes !=
                           null
@@ -2213,15 +2209,12 @@ class _NetworkImage
               frame == null
                   ? 0
                   : 1,
-
           duration:
               const Duration(
             milliseconds: 300,
           ),
-
           curve:
               Curves.easeOut,
-
           child:
               child,
         );
@@ -2239,23 +2232,19 @@ class _NetworkImage
     return Container(
       color:
           const Color(0xff151515),
-
       child: Center(
         child:
             Container(
           width: 72,
           height: 72,
-
           decoration:
               BoxDecoration(
             color: Colors.white
                 .withOpacity(
               .06,
             ),
-
             shape:
                 BoxShape.circle,
-
             border:
                 Border.all(
               color: Colors.white
@@ -2264,17 +2253,14 @@ class _NetworkImage
               ),
             ),
           ),
-
           child:
               Icon(
             showErrorIcon
                 ? icon
                 : Icons
                     .image_outlined,
-
             color:
                 Colors.white24,
-
             size: 32,
           ),
         ),

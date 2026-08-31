@@ -58,178 +58,234 @@ class CartScreen extends StatelessWidget {
                     /// ==========================
 
                     Container(
-                      margin: const EdgeInsets.fromLTRB(
-                        16,
-                        12,
-                        16,
-                        12,
-                      ),
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(.92),
-                        borderRadius:
-                            BorderRadius.circular(28),
-                        border: Border.all(
-                          color: Colors.white,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xffD81B78,
-                            ).withOpacity(.08),
-                            blurRadius: 30,
-                            offset:
-                                const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            borderRadius:
-                                BorderRadius.circular(
-                                    16),
-                           
-                                onTap: () {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const HomeScreen(),
+  margin: const EdgeInsets.fromLTRB(
+    12,
+    8,
+    12,
+    8,
+  ),
+
+  padding: const EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 10,
+  ),
+
+  decoration: BoxDecoration(
+    color: Colors.white.withOpacity(.94),
+
+    borderRadius: BorderRadius.circular(18),
+
+    border: Border.all(
+      color: Colors.white,
     ),
-    (route) => false,
-  );
-},
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xffFCE4EC,
-                                ),
-                                borderRadius:
-                                    BorderRadius
-                                        .circular(16),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Color(
-                                  0xffD81B78,
-                                ),
-                                size: 20,
-                              ),
-                            ),
-                          ),
 
-                          const SizedBox(width: 18),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(
+          0xffD81B78,
+        ).withOpacity(.07),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
+      ),
+    ],
+  ),
 
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start,
-                              children: [
-                                const Text(
-                                  "My Cart",
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight:
-                                        FontWeight
-                                            .bold,
-                                  ),
-                                ),
+  child: Row(
+    children: [
+      //////////////////////////////////////////////////////
+      /// BACK BUTTON
+      //////////////////////////////////////////////////////
 
-                                const SizedBox(
-                                    height: 4),
+      InkWell(
+        borderRadius:
+            BorderRadius.circular(12),
 
-                                Text(
-                                  "${cart.totalItems} item${cart.totalItems == 1 ? "" : "s"}",
-                                  style: TextStyle(
-                                    color: Colors
-                                        .grey.shade600,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+        onTap: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  const HomeScreen(),
+            ),
+            (route) => false,
+          );
+        },
 
-                          if (cart.hasItems)
-                            IconButton(
-                              tooltip: "Clear Cart",
-                              icon: const Icon(
-                                Icons
-                                    .delete_sweep_rounded,
-                                color: Color(
-                                  0xffD81B78,
-                                ),
-                              ),
-                              onPressed: () async {
-                                final confirm =
-                                    await showDialog<
-                                        bool>(
-                                  context: context,
-                                  builder: (_) =>
-                                      AlertDialog(
-                                    shape:
-                                        RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius
-                                              .circular(
-                                                  20),
-                                    ),
-                                    title: const Text(
-                                      "Clear Cart?",
-                                    ),
-                                    content:
-                                        const Text(
-                                      "Remove all items from your cart?",
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(
-                                          context,
-                                          false,
-                                        ),
-                                        child:
-                                            const Text(
-                                          "Cancel",
-                                        ),
-                                      ),
-                                      FilledButton(
-                                        style:
-                                            FilledButton
-                                                .styleFrom(
-                                          backgroundColor:
-                                              const Color(
-                                            0xffD81B78,
-                                          ),
-                                        ),
-                                        onPressed: () =>
-                                            Navigator.pop(
-                                          context,
-                                          true,
-                                        ),
-                                        child:
-                                            const Text(
-                                          "Clear",
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
+        child: Container(
+          width: 38,
+          height: 38,
 
-                                if (confirm ==
-                                    true) {
-                                  await cart
-                                      .clearCart();
-                                }
-                              },
-                            ),
-                        ],
+          decoration: BoxDecoration(
+            color: const Color(
+              0xffFCE4EC,
+            ),
+
+            borderRadius:
+                BorderRadius.circular(12),
+          ),
+
+          child: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(
+              0xffD81B78,
+            ),
+            size: 17,
+          ),
+        ),
+      ),
+
+      const SizedBox(width: 11),
+
+      //////////////////////////////////////////////////////
+      /// TITLE + ITEM COUNT
+      //////////////////////////////////////////////////////
+
+      Expanded(
+        child: Row(
+          children: [
+            const Text(
+              "My Cart",
+
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Color(
+                  0xff222222,
+                ),
+                height: 1,
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+
+              decoration: BoxDecoration(
+                color: const Color(
+                  0xffFCE4EC,
+                ),
+
+                borderRadius:
+                    BorderRadius.circular(20),
+              ),
+
+              child: Text(
+                "${cart.totalItems}",
+
+                style: const TextStyle(
+                  color: Color(
+                    0xffD81B78,
+                  ),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      //////////////////////////////////////////////////////
+      /// CLEAR CART
+      //////////////////////////////////////////////////////
+
+      if (cart.hasItems)
+        InkWell(
+          borderRadius:
+              BorderRadius.circular(11),
+
+          onTap: () async {
+            final confirm =
+                await showDialog<bool>(
+              context: context,
+              builder: (_) =>
+                  AlertDialog(
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    18,
+                  ),
+                ),
+
+                title: const Text(
+                  "Clear Cart?",
+                ),
+
+                content: const Text(
+                  "Remove all items from your cart?",
+                ),
+
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.pop(
+                      context,
+                      false,
+                    ),
+                    child: const Text(
+                      "Cancel",
+                    ),
+                  ),
+
+                  FilledButton(
+                    style:
+                        FilledButton.styleFrom(
+                      backgroundColor:
+                          const Color(
+                        0xffD81B78,
                       ),
                     ),
 
+                    onPressed: () =>
+                        Navigator.pop(
+                      context,
+                      true,
+                    ),
+
+                    child: const Text(
+                      "Clear",
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              await cart.clearCart();
+            }
+          },
+
+          child: Container(
+            width: 38,
+            height: 38,
+
+            decoration: BoxDecoration(
+              color: const Color(
+                0xffFFF1F5,
+              ),
+
+              borderRadius:
+                  BorderRadius.circular(11),
+            ),
+
+            child: const Icon(
+              Icons.delete_sweep_outlined,
+              color: Color(
+                0xffD81B78,
+              ),
+              size: 20,
+            ),
+          ),
+        ),
+    ],
+  ),
+),
                     /// ==========================
                     /// Body
                     /// ==========================
